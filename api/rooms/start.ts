@@ -80,19 +80,20 @@ export default async function handler(req: any, res: any) {
   while (roles.length < players.length) roles.push(Role.VILLAGER);
 
   const shuffledRoles = shuffle(roles);
-  const updates = players.map((player, index) => ({
-    id: player.id,
-    role: shuffledRoles[index],
-    has_confirmed: false,
-  }));
+  for (let index = 0; index < players.length; index += 1) {
+    const player = players[index];
+    const { error: updateError } = await supabaseAdmin
+      .from('players')
+      .update({
+        role: shuffledRoles[index],
+        has_confirmed: false,
+      })
+      .eq('id', player.id);
 
-  const { error: updatePlayersError } = await supabaseAdmin
-    .from('players')
-    .upsert(updates, { onConflict: 'id' });
-
-  if (updatePlayersError) {
-    console.error('Failed to assign roles', updatePlayersError);
-    return toJson(res, 500, { error: updatePlayersError.message || 'Failed to assign roles' });
+    if (updateError) {
+      console.error('Failed to assign roles', updateError);
+      return toJson(res, 500, { error: updateError.message || 'Failed to assign roles' });
+    }
   }
 
   const { error: updateRoomError } = await supabaseAdmin
