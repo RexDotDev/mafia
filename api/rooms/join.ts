@@ -59,10 +59,6 @@ export default async function handler(req: any, res: any) {
     return toJson(res, 200, { data: { roomId: createdRoom.id } });
   }
 
-  if (room.status !== 'waiting') {
-    return toJson(res, 409, { error: 'Igra je već počela!' });
-  }
-
   const { data: existingPlayer, error: existingError } = await supabaseAdmin
     .from('players')
     .select('id')
@@ -72,6 +68,23 @@ export default async function handler(req: any, res: any) {
 
   if (existingError) {
     return toJson(res, 500, { error: 'Failed to load player' });
+  }
+
+  if (existingPlayer) {
+    const { error: updatePlayerError } = await supabaseAdmin
+      .from('players')
+      .update({ name: playerName })
+      .eq('id', existingPlayer.id);
+
+    if (updatePlayerError) {
+      return toJson(res, 500, { error: 'Failed to update player' });
+    }
+
+    return toJson(res, 200, { data: { roomId: room.id } });
+  }
+
+  if (room.status !== 'waiting') {
+    return toJson(res, 409, { error: 'Igra je već počela!' });
   }
 
   if (!existingPlayer) {
@@ -85,15 +98,6 @@ export default async function handler(req: any, res: any) {
 
     if (createPlayerError) {
       return toJson(res, 500, { error: 'Failed to create player' });
-    }
-  } else {
-    const { error: updatePlayerError } = await supabaseAdmin
-      .from('players')
-      .update({ name: playerName })
-      .eq('id', existingPlayer.id);
-
-    if (updatePlayerError) {
-      return toJson(res, 500, { error: 'Failed to update player' });
     }
   }
 

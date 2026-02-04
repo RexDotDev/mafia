@@ -19,6 +19,7 @@ const normalizeSettings = (raw: any): RoomSettings => ({
 type EntryMode = 'join' | 'create';
 
 const generateRoomCode = () => Math.floor(100000 + Math.random() * 900000).toString();
+const SESSION_KEY = 'mafia_session_v1';
 
 const App: React.FC = () => {
   const [entryMode, setEntryMode] = useState<EntryMode>('join');
@@ -30,6 +31,8 @@ const App: React.FC = () => {
   const [isBusy, setIsBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [draftSettings, setDraftSettings] = useState<RoomSettings>(DEFAULT_SETTINGS);
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
+  const [hasRestoredSession, setHasRestoredSession] = useState(false);
   const [clientId] = useState(() => {
     const stored = localStorage.getItem('mafia_client_id');
     if (stored) return stored;
@@ -128,26 +131,19 @@ const App: React.FC = () => {
     }
   }, [room, me?.hasConfirmed]);
 
-  const handleJoin = async () => {
-    if (!playerName.trim() || !roomCode.trim()) return;
+  const joinWithPayload = async (code: string, name: string, settings?: RoomSettings) => {
     setErrorMessage('');
     setIsBusy(true);
-    const normalizedCode = roomCode.replace(/\D/g, '').slice(0, 6);
-    if (normalizedCode.length !== 6) {
-      setIsBusy(false);
-      setErrorMessage('Unesi šifru od 6 cifara.');
-      return;
-    }
-
     try {
       const { roomId: createdRoomId } = await joinRoom({
-        roomCode: normalizedCode,
-        playerName: playerName.trim(),
+        roomCode: code,
+        playerName: name,
         clientId,
-        settings: entryMode === 'create' ? draftSettings : undefined,
+        settings,
       });
-      setRoomCode(normalizedCode);
+      setRoomCode(code);
       setRoomId(createdRoomId);
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ roomCode: code, playerName: name }));
       await loadRoomById(createdRoomId);
       setPhase(GamePhase.LOBBY);
     } catch (error: any) {
@@ -155,6 +151,17 @@ const App: React.FC = () => {
     } finally {
       setIsBusy(false);
     }
+  };
+
+  const handleJoin = async () => {
+    if (!playerName.trim() || !roomCode.trim()) return;
+    const normalizedCode = roomCode.replace(/\D/g, '').slice(0, 6);
+    if (normalizedCode.length !== 6) {
+      setErrorMessage('Unesi šifru od 6 cifara.');
+      return;
+    }
+    const settings = entryMode === 'create' ? draftSettings : undefined;
+    await joinWithPayload(normalizedCode, playerName.trim(), settings);
   };
 
   const handleStart = async () => {
@@ -218,6 +225,18 @@ const App: React.FC = () => {
     }
   };
 
+  const handleCopyCode = async () => {
+    if (!roomCode) return;
+    try {
+      await navigator.clipboard.writeText(roomCode);
+      setCopyStatus('copied');
+    } catch {
+      setCopyStatus('error');
+    } finally {
+      setTimeout(() => setCopyStatus('idle'), 1500);
+    }
+  };
+
   const handleDraftMafiaChange = (delta: number) => {
     setDraftSettings((prev) => ({
       ...prev,
@@ -228,6 +247,30 @@ const App: React.FC = () => {
   const toggleDraftSetting = (key: 'doctor' | 'detective') => {
     setDraftSettings((prev) => ({ ...prev, [key]: !prev[key] }));
   };
+
+  useEffect(() => {
+    if (hasRestoredSession) return;
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) {
+      setHasRestoredSession(true);
+      return;
+    }
+    try {
+      const parsed = JSON.parse(raw) as { roomCode?: string; playerName?: string };
+      if (parsed?.roomCode && parsed?.playerName) {
+        setEntryMode('join');
+        setPlayerName(parsed.playerName);
+        setRoomCode(parsed.roomCode);
+        joinWithPayload(parsed.roomCode, parsed.playerName).finally(() => {
+          setHasRestoredSession(true);
+        });
+        return;
+      }
+    } catch {
+      localStorage.removeItem(SESSION_KEY);
+    }
+    setHasRestoredSession(true);
+  }, [hasRestoredSession]);
 
   return (
     <div className="min-h-screen bg-[#050505] text-[#eee] flex flex-col items-center justify-center p-6 font-sans">
@@ -297,6 +340,13 @@ const App: React.FC = () => {
                     className="px-3 py-2 rounded-xl bg-[#1a1a1a] border border-[#333] text-[10px] uppercase tracking-widest text-gray-400"
                   >
                     Novi kod
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCopyCode}
+                    className="px-3 py-2 rounded-xl bg-[#1a1a1a] border border-[#333] text-[10px] uppercase tracking-widest text-gray-400"
+                  >
+                    {copyStatus === 'copied' ? 'Kopirano' : copyStatus === 'error' ? 'Greška' : 'Kopiraj'}
                   </button>
                 </div>
                 <div className="bg-[#0e0e0e] border border-[#222] rounded-2xl p-4 space-y-3">
