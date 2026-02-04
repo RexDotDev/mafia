@@ -17,9 +17,11 @@ const normalizeSettings = (raw: any): RoomSettings => ({
 });
 
 type EntryMode = 'join' | 'create';
+type ThemeMode = 'light' | 'dark';
 
 const generateRoomCode = () => Math.floor(100000 + Math.random() * 900000).toString();
 const SESSION_KEY = 'mafia_session_v1';
+const THEME_KEY = 'mafia_theme_v1';
 
 const App: React.FC = () => {
   const [entryMode, setEntryMode] = useState<EntryMode>('join');
@@ -33,6 +35,14 @@ const App: React.FC = () => {
   const [draftSettings, setDraftSettings] = useState<RoomSettings>(DEFAULT_SETTINGS);
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
   const [hasRestoredSession, setHasRestoredSession] = useState(false);
+  const [theme, setTheme] = useState<ThemeMode>(() => {
+    const stored = localStorage.getItem(THEME_KEY);
+    if (stored === 'light' || stored === 'dark') return stored;
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
+  });
   const [clientId] = useState(() => {
     const stored = localStorage.getItem('mafia_client_id');
     if (stored) return stored;
@@ -40,6 +50,11 @@ const App: React.FC = () => {
     localStorage.setItem('mafia_client_id', generated);
     return generated;
   });
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem(THEME_KEY, theme);
+  }, [theme]);
 
   const loadRoomById = useCallback(async (id: string) => {
     const { data: roomRow, error: roomError } = await supabase
@@ -237,6 +252,34 @@ const App: React.FC = () => {
     }
   };
 
+  const handleThemeToggle = () => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  };
+
+  const themeToggleFloating = (
+    <button
+      type="button"
+      onClick={handleThemeToggle}
+      className="hidden md:flex fixed right-4 top-4 sm:right-6 sm:top-6 z-50 h-11 w-11 items-center justify-center rounded-full border border-[color:var(--line)] bg-[var(--surface-strong)] text-[color:var(--ink)] shadow-sm hover:opacity-80 transition"
+      aria-label="Promeni temu"
+      title={theme === 'light' ? 'Tamna tema' : 'Svetla tema'}
+    >
+      <i className={`fas ${theme === 'light' ? 'fa-moon' : 'fa-sun'}`}></i>
+    </button>
+  );
+
+  const themeToggleInline = (
+    <button
+      type="button"
+      onClick={handleThemeToggle}
+      className="md:hidden h-10 w-10 rounded-full border border-[color:var(--line)] bg-[var(--surface-strong)] text-[color:var(--ink)] shadow-sm hover:opacity-80 transition"
+      aria-label="Promeni temu"
+      title={theme === 'light' ? 'Tamna tema' : 'Svetla tema'}
+    >
+      <i className={`fas ${theme === 'light' ? 'fa-moon' : 'fa-sun'}`}></i>
+    </button>
+  );
+
   const handleDraftMafiaChange = (delta: number) => {
     setDraftSettings((prev) => ({
       ...prev,
@@ -297,25 +340,24 @@ const App: React.FC = () => {
   if (!hasRestoredSession) {
     return (
       <div className="app-bg">
-        <div className="app-shell flex min-h-screen items-center justify-center px-5 py-12">
-          <div className="w-full max-w-md rounded-[28px] border border-black/10 bg-white/80 px-8 py-10 shadow-[0_30px_80px_rgba(15,15,15,0.18)] backdrop-blur">
+        {themeToggleFloating}
+        <div className="app-shell flex min-h-screen items-center justify-center px-4 py-6 sm:px-5 sm:py-12">
+          <div className="w-full max-w-md rounded-[28px] border border-[color:var(--line)] bg-[var(--surface)] px-6 py-8 sm:px-8 sm:py-10 shadow-[0_30px_80px_rgba(15,15,15,0.18)] backdrop-blur relative">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-[11px] uppercase tracking-[0.4em] text-black/45">Priprema</p>
-                <h1 className="title-font text-3xl text-black">MAFIJA</h1>
-                <p className="mt-2 text-xs text-black/60">Podesavamo sobu i konekciju.</p>
+                <p className="text-[11px] uppercase tracking-[0.4em] text-[color:var(--ink-faint)]">Priprema</p>
+                <h1 className="title-font text-3xl text-[color:var(--ink)]">MAFIJA</h1>
+                <p className="mt-2 text-xs text-[color:var(--ink-muted)]">Podesavamo sobu i konekciju.</p>
               </div>
-              <div className="h-11 w-11 rounded-2xl border border-black/10 bg-white text-red-600 flex items-center justify-center shadow-sm">
-                <i className="fas fa-mask"></i>
-              </div>
+              {themeToggleInline}
             </div>
-            <div className="mt-8 rounded-2xl border border-black/10 bg-[#f9f6f2] p-4">
+            <div className="mt-6 sm:mt-8 rounded-2xl border border-[color:var(--line)] bg-[var(--surface-soft)] p-4">
               <div className="flex justify-center space-x-2">
                 <div className="h-2.5 w-2.5 rounded-full bg-red-500 animate-bounce"></div>
                 <div className="h-2.5 w-2.5 rounded-full bg-red-500 animate-bounce [animation-delay:0.2s]"></div>
                 <div className="h-2.5 w-2.5 rounded-full bg-red-500 animate-bounce [animation-delay:0.4s]"></div>
               </div>
-              <p className="mt-3 text-center text-[10px] uppercase tracking-[0.35em] text-black/45">Ucitavanje...</p>
+              <p className="mt-3 text-center text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-faint)]">Ucitavanje...</p>
             </div>
           </div>
         </div>
@@ -325,33 +367,32 @@ const App: React.FC = () => {
 
   return (
     <div className="app-bg">
-      <div className="app-shell flex min-h-screen flex-col items-center justify-center px-5 py-12">
+      {themeToggleFloating}
+      <div className="app-shell flex min-h-screen flex-col items-center justify-center px-4 py-6 sm:px-5 sm:py-12">
         <div className="w-full max-w-5xl">
           <div className="relative">
             <div className="absolute -inset-1 rounded-[36px] bg-gradient-to-br from-red-600/25 via-amber-400/25 to-transparent blur-2xl"></div>
-            <div className="relative overflow-hidden rounded-[32px] border border-black/10 bg-white/80 shadow-[0_35px_90px_rgba(12,12,12,0.18)] backdrop-blur">
+            <div className="relative overflow-hidden rounded-[32px] border border-[color:var(--line)] bg-[var(--surface)] shadow-[0_35px_90px_rgba(12,12,12,0.18)] backdrop-blur">
               <div className="grid md:grid-cols-[280px,1fr]">
-                <aside className="flex flex-col gap-6 bg-[#f9f6f1] p-6 md:p-8 border-b md:border-b-0 md:border-r border-black/10">
+                <aside className="flex flex-col gap-4 sm:gap-6 bg-[var(--surface-soft)] p-5 sm:p-6 md:p-8 border-b md:border-b-0 md:border-r border-[color:var(--line)]">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-[11px] uppercase tracking-[0.4em] text-black/45">Nocna igra</p>
-                      <h1 className="title-font text-4xl md:text-5xl text-black">MAFIJA</h1>
-                      <p className="mt-2 text-sm text-black/60">Diskretan diler uloga za igru uzivo.</p>
+                      <p className="text-[11px] uppercase tracking-[0.4em] text-[color:var(--ink-faint)]">Nocna igra</p>
+                      <h1 className="title-font text-4xl md:text-5xl text-[color:var(--ink)]">MAFIJA</h1>
+                      <p className="mt-2 text-sm text-[color:var(--ink-muted)]">Diskretan diler uloga za igru uzivo.</p>
                     </div>
-                    <div className="h-12 w-12 rounded-2xl border border-black/10 bg-white text-red-600 flex items-center justify-center shadow-sm">
-                      <i className="fas fa-mask"></i>
-                    </div>
+                    {themeToggleInline}
                   </div>
 
                   {roomCode.length === 6 && (
-                    <div className="rounded-2xl border border-black/10 bg-white/90 p-4 shadow-sm">
-                      <p className="text-[10px] uppercase tracking-[0.35em] text-black/45">Sifra sobe</p>
+                    <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-4 shadow-sm">
+                      <p className="text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-faint)]">Sifra sobe</p>
                       <div className="mt-3 flex items-center justify-between gap-3">
-                        <span className="font-mono text-xl tracking-[0.35em] text-black">{roomCode.toUpperCase()}</span>
+                        <span className="font-mono text-xl tracking-[0.35em] text-[color:var(--ink)]">{roomCode.toUpperCase()}</span>
                         <button
                           type="button"
                           onClick={handleCopyCode}
-                          className="rounded-xl border border-black/10 bg-white px-3 py-2 text-[10px] uppercase tracking-[0.3em] text-black/70 hover:text-black transition"
+                          className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-[10px] uppercase tracking-[0.3em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] transition"
                         >
                           {copyStatus === 'copied' ? 'Kopirano' : copyStatus === 'error' ? 'Greska' : 'Kopiraj'}
                         </button>
@@ -363,14 +404,14 @@ const App: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setRoomCode(generateRoomCode())}
-                      className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-[10px] uppercase tracking-[0.35em] text-black/70 hover:text-black transition"
+                      className="w-full rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-4 py-3 text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] transition"
                     >
                       Novi kod
                     </button>
                   )}
 
-                  <div className="rounded-2xl border border-black/10 bg-white/80 p-4 text-xs text-black/60">
-                    <div className="flex items-center gap-2 text-black/60">
+                  <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 text-xs text-[color:var(--ink-muted)]">
+                    <div className="flex items-center gap-2 text-[color:var(--ink-muted)]">
                       <span className="h-2 w-2 rounded-full bg-red-500"></span>
                       <span>Privatno deljenje uloga</span>
                     </div>
@@ -380,7 +421,7 @@ const App: React.FC = () => {
                   </div>
                 </aside>
 
-                <main className="p-6 md:p-10 bg-white/70">
+                <main className="p-5 sm:p-6 md:p-10 bg-[var(--surface)]">
                   {errorMessage && (
                     <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
                       {errorMessage}
@@ -388,13 +429,13 @@ const App: React.FC = () => {
                   )}
 
                   {phase === GamePhase.JOIN && (
-                    <div className="space-y-6">
-                      <div className="rounded-2xl border border-black/10 bg-black/5 p-1 flex">
+                    <div className="space-y-4 sm:space-y-6">
+                      <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface-muted)] p-1 flex">
                         <button
                           type="button"
                           onClick={() => handleModeChange('create')}
                           className={`flex-1 py-2 rounded-xl text-[11px] uppercase tracking-[0.3em] font-semibold transition-colors ${
-                            entryMode === 'create' ? 'bg-white text-black shadow-sm' : 'text-black/50'
+                            entryMode === 'create' ? 'bg-[var(--surface-strong)] text-[color:var(--ink)] shadow-sm' : 'text-[color:var(--ink-faint)]'
                           }`}
                         >
                           Kreiraj
@@ -403,7 +444,7 @@ const App: React.FC = () => {
                           type="button"
                           onClick={() => handleModeChange('join')}
                           className={`flex-1 py-2 rounded-xl text-[11px] uppercase tracking-[0.3em] font-semibold transition-colors ${
-                            entryMode === 'join' ? 'bg-white text-black shadow-sm' : 'text-black/50'
+                            entryMode === 'join' ? 'bg-[var(--surface-strong)] text-[color:var(--ink)] shadow-sm' : 'text-[color:var(--ink-faint)]'
                           }`}
                         >
                           Pridruzi se
@@ -411,9 +452,9 @@ const App: React.FC = () => {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-[11px] uppercase tracking-[0.3em] text-black/50">Ime igraca</label>
+                        <label className="text-[11px] uppercase tracking-[0.3em] text-[color:var(--ink-faint)]">Ime igraca</label>
                         <input
-                          className="w-full rounded-2xl border border-black/10 bg-white/90 px-4 py-3 text-sm text-black placeholder:text-black/40 focus:outline-none focus:ring-2 focus:ring-red-400/50"
+                          className="w-full rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-4 py-3 text-sm text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
                           placeholder="Tvoje ime"
                           value={playerName}
                           onChange={(event) => setPlayerName(event.target.value)}
@@ -422,9 +463,9 @@ const App: React.FC = () => {
 
                       {entryMode === 'join' ? (
                         <div className="space-y-2">
-                          <label className="text-[11px] uppercase tracking-[0.3em] text-black/50">Sifra sobe</label>
+                          <label className="text-[11px] uppercase tracking-[0.3em] text-[color:var(--ink-faint)]">Sifra sobe</label>
                           <input
-                            className="w-full rounded-2xl border border-black/10 bg-white/90 px-4 py-3 text-sm uppercase font-mono tracking-[0.35em] text-black placeholder:text-black/40 focus:outline-none focus:ring-2 focus:ring-red-400/50"
+                            className="w-full rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-4 py-3 text-sm uppercase font-mono tracking-[0.35em] text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
                             placeholder="6 cifara"
                             value={roomCode}
                             onChange={(event) => setRoomCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
@@ -432,26 +473,26 @@ const App: React.FC = () => {
                           />
                         </div>
                       ) : (
-                        <div className="rounded-2xl border border-black/10 bg-[#f9f6f1] p-4 space-y-4">
-                          <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.35em] text-black/50">
+                        <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface-soft)] p-4 space-y-3 sm:space-y-4">
+                          <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-faint)]">
                             <span>Postavke sobe</span>
-                            <span className="text-black/40">Host</span>
+                            <span className="text-[color:var(--ink-soft)]">Host</span>
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className="text-sm text-black/70">Broj Mafijasa</span>
+                            <span className="text-sm text-[color:var(--ink-muted)]">Broj Mafijasa</span>
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"
                                 onClick={() => handleDraftMafiaChange(-1)}
-                                className="h-9 w-9 rounded-xl border border-black/10 bg-white text-sm font-semibold text-black/70 hover:text-black"
+                                className="h-9 w-9 rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] text-sm font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
                               >
                                 -
                               </button>
-                              <span className="w-8 text-center font-semibold text-black">{draftSettings.mafiaCount}</span>
+                              <span className="w-8 text-center font-semibold text-[color:var(--ink)]">{draftSettings.mafiaCount}</span>
                               <button
                                 type="button"
                                 onClick={() => handleDraftMafiaChange(1)}
-                                className="h-9 w-9 rounded-xl border border-black/10 bg-white text-sm font-semibold text-black/70 hover:text-black"
+                                className="h-9 w-9 rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] text-sm font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
                               >
                                 +
                               </button>
@@ -464,7 +505,7 @@ const App: React.FC = () => {
                               className={`rounded-xl py-2 text-[10px] uppercase tracking-[0.3em] font-semibold ${
                                 draftSettings.doctor
                                   ? 'bg-emerald-600 text-white'
-                                  : 'bg-white text-black/60 border border-black/10'
+                                  : 'bg-[var(--surface-strong)] text-[color:var(--ink-muted)] border border-[color:var(--line)]'
                               }`}
                             >
                               Doktor
@@ -475,7 +516,7 @@ const App: React.FC = () => {
                               className={`rounded-xl py-2 text-[10px] uppercase tracking-[0.3em] font-semibold ${
                                 draftSettings.detective
                                   ? 'bg-amber-500 text-white'
-                                  : 'bg-white text-black/60 border border-black/10'
+                                  : 'bg-[var(--surface-strong)] text-[color:var(--ink-muted)] border border-[color:var(--line)]'
                               }`}
                             >
                               Inspektor
@@ -495,13 +536,13 @@ const App: React.FC = () => {
                   )}
 
                   {phase === GamePhase.LOBBY && (
-                    <div className="space-y-6">
+                    <div className="space-y-4 sm:space-y-6">
                       <div className="flex items-center justify-between">
-                        <h2 className="text-[11px] uppercase tracking-[0.35em] text-black/50">
+                        <h2 className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--ink-faint)]">
                           Igraci ({players.length})
                         </h2>
                         {me?.isHost && (
-                          <span className="rounded-full bg-black text-white text-[10px] px-3 py-1 uppercase tracking-[0.3em]">
+                          <span className="rounded-full bg-[var(--ink)] text-[color:var(--paper)] text-[10px] px-3 py-1 uppercase tracking-[0.3em]">
                             Host
                           </span>
                         )}
@@ -511,9 +552,9 @@ const App: React.FC = () => {
                         {players.map((player) => (
                           <div
                             key={player.id}
-                            className="flex items-center justify-between rounded-2xl border border-black/10 bg-white/80 px-4 py-3"
+                            className="flex items-center justify-between rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] px-4 py-3"
                           >
-                            <span className="text-sm font-medium text-black/80">
+                            <span className="text-sm font-medium text-[color:var(--ink)]">
                               {player.name} {player.clientId === clientId && '(Ti)'}
                             </span>
                             <i className="fas fa-check-circle text-emerald-600 text-xs"></i>
@@ -522,22 +563,22 @@ const App: React.FC = () => {
                       </div>
 
                       {me?.isHost ? (
-                        <div className="rounded-2xl border border-black/10 bg-[#f9f6f1] p-4 space-y-4">
+                        <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface-soft)] p-4 space-y-3 sm:space-y-4">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm text-black/70">Broj Mafijasa</span>
+                            <span className="text-sm text-[color:var(--ink-muted)]">Broj Mafijasa</span>
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => handleMafiaCountChange(-1)}
                                 disabled={isBusy}
-                                className="h-9 w-9 rounded-xl border border-black/10 bg-white text-sm font-semibold text-black/70 hover:text-black disabled:opacity-60"
+                                className="h-9 w-9 rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] text-sm font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] disabled:opacity-60"
                               >
                                 -
                               </button>
-                              <span className="w-8 text-center font-semibold text-black">{settings.mafiaCount}</span>
+                              <span className="w-8 text-center font-semibold text-[color:var(--ink)]">{settings.mafiaCount}</span>
                               <button
                                 onClick={() => handleMafiaCountChange(1)}
                                 disabled={isBusy}
-                                className="h-9 w-9 rounded-xl border border-black/10 bg-white text-sm font-semibold text-black/70 hover:text-black disabled:opacity-60"
+                                className="h-9 w-9 rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] text-sm font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] disabled:opacity-60"
                               >
                                 +
                               </button>
@@ -546,23 +587,23 @@ const App: React.FC = () => {
                           <button
                             onClick={handleStart}
                             disabled={isBusy}
-                            className="w-full rounded-2xl bg-black py-3 text-[11px] font-semibold uppercase tracking-[0.35em] text-white hover:bg-black/90 disabled:opacity-60"
+                            className="w-full rounded-2xl bg-[var(--ink)] py-3 text-[11px] font-semibold uppercase tracking-[0.35em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
                           >
                             Podeli uloge
                           </button>
                           <button
                             onClick={handleLeaveRoom}
-                            className="w-full rounded-2xl border border-black/10 bg-white py-3 text-[10px] uppercase tracking-[0.35em] text-black/60 hover:text-black transition"
+                            className="w-full rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] py-3 text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] transition"
                           >
                             Napusti sobu
                           </button>
                         </div>
                       ) : (
-                        <div className="rounded-2xl border border-black/10 bg-white/80 p-4 text-center space-y-4">
-                          <p className="text-xs text-black/60 italic">Cekamo da domacin podeli uloge...</p>
+                        <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 text-center space-y-3 sm:space-y-4">
+                          <p className="text-xs text-[color:var(--ink-muted)] italic">Cekamo da domacin podeli uloge...</p>
                           <button
                             onClick={handleLeaveRoom}
-                            className="w-full rounded-2xl border border-black/10 bg-white py-3 text-[10px] uppercase tracking-[0.35em] text-black/60 hover:text-black transition"
+                            className="w-full rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] py-3 text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] transition"
                           >
                             Napusti sobu
                           </button>
@@ -572,20 +613,20 @@ const App: React.FC = () => {
                   )}
 
                   {phase === GamePhase.REVEAL && (
-                    <div className="text-center space-y-8">
-                      <p className="text-sm text-black/60 italic">Tvoja tajna uloga je...</p>
+                    <div className="text-center space-y-6 sm:space-y-8">
+                      <p className="text-sm text-[color:var(--ink-muted)] italic">Tvoja tajna uloga je...</p>
 
-                      <div className="relative overflow-hidden rounded-[28px] border border-black/10 bg-white/90 px-6 py-12 shadow-sm group">
-                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/90 backdrop-blur-sm transition-opacity duration-300 group-active:opacity-0">
-                          <span className="title-font text-base uppercase tracking-[0.4em] text-black/70">
+                      <div className="relative overflow-hidden rounded-[28px] border border-[color:var(--line)] bg-[var(--surface-strong)] px-6 py-10 sm:py-12 shadow-sm group">
+                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--surface-strong)] backdrop-blur-sm transition-opacity duration-300 group-active:opacity-0">
+                          <span className="title-font text-base uppercase tracking-[0.4em] text-[color:var(--ink-muted)]">
                             Drzi za prikaz
                           </span>
                         </div>
 
                         <div className="relative flex flex-col items-center">
                           <div className="text-6xl mb-4">{ROLE_ICONS[me?.role || Role.VILLAGER]}</div>
-                          <h3 className="title-font text-3xl text-black uppercase tracking-tight">{me?.role}</h3>
-                          <p className="mt-3 text-xs text-black/55 px-4">
+                          <h3 className="title-font text-3xl text-[color:var(--ink)] uppercase tracking-tight">{me?.role}</h3>
+                          <p className="mt-3 text-xs text-[color:var(--ink-muted)] px-4">
                             {ROLE_DESCRIPTIONS[me?.role || Role.VILLAGER]}
                           </p>
                         </div>
@@ -594,7 +635,7 @@ const App: React.FC = () => {
                       <button
                         onClick={handleConfirm}
                         disabled={isBusy}
-                        className="w-full rounded-2xl bg-black text-white font-semibold py-4 uppercase tracking-[0.3em] text-xs shadow-[0_20px_40px_rgba(0,0,0,0.2)] disabled:opacity-60"
+                        className="w-full rounded-2xl bg-[var(--ink)] text-[color:var(--paper)] font-semibold py-4 uppercase tracking-[0.3em] text-xs shadow-[0_20px_40px_rgba(0,0,0,0.2)] disabled:opacity-60"
                       >
                         Video sam ulogu
                       </button>
@@ -602,33 +643,33 @@ const App: React.FC = () => {
                   )}
 
                   {phase === GamePhase.WAITING_FOR_OTHERS && (
-                    <div className="text-center space-y-6 py-6">
+                    <div className="text-center space-y-5 sm:space-y-6 py-4 sm:py-6">
                       <div className="flex justify-center space-x-2">
                         <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-bounce"></div>
                         <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-bounce [animation-delay:0.2s]"></div>
                         <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-bounce [animation-delay:0.4s]"></div>
                       </div>
-                      <h2 className="title-font text-2xl text-black">Cekamo ostale...</h2>
-                      <div className="rounded-2xl border border-black/10 bg-white/80 p-4 space-y-2">
+                      <h2 className="title-font text-2xl text-[color:var(--ink)]">Cekamo ostale...</h2>
+                      <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2">
                         {players.map((player) => (
                           <div
                             key={player.id}
                             className="text-[10px] uppercase tracking-[0.35em] flex justify-between items-center"
                           >
-                            <span className={player.hasConfirmed ? 'text-emerald-600' : 'text-black/40'}>
+                            <span className={player.hasConfirmed ? 'text-emerald-600' : 'text-[color:var(--ink-soft)]'}>
                               {player.name}
                             </span>
                             {player.hasConfirmed ? (
                               <i className="fas fa-check text-[10px]"></i>
                             ) : (
-                              <i className="fas fa-clock text-[10px] text-black/40"></i>
+                              <i className="fas fa-clock text-[10px] text-[color:var(--ink-soft)]"></i>
                             )}
                           </div>
                         ))}
                       </div>
                       <button
                         onClick={handleLeaveRoom}
-                        className="w-full rounded-2xl border border-black/10 bg-white py-3 text-[10px] uppercase tracking-[0.35em] text-black/60 hover:text-black transition"
+                        className="w-full rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] py-3 text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] transition"
                       >
                         Napusti sobu
                       </button>
@@ -636,30 +677,27 @@ const App: React.FC = () => {
                   )}
 
                   {phase === GamePhase.READY_TO_PLAY && (
-                    <div className="text-center space-y-6 py-4">
-                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-red-600 text-white shadow-[0_18px_40px_rgba(185,28,28,0.25)]">
-                        <i className="fas fa-mask"></i>
-                      </div>
+                    <div className="text-center space-y-5 sm:space-y-6 py-4">
                       <div>
-                        <h2 className="title-font text-3xl text-black">Spremni!</h2>
-                        <p className="mt-2 text-sm text-black/60">
+                        <h2 className="title-font text-3xl text-[color:var(--ink)]">Spremni!</h2>
+                        <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
                           Svi igraci su videli svoje uloge. Odlozite telefone i pocnite igru uzivo.
                         </p>
                       </div>
-                      <div className="h-px bg-black/10 w-full"></div>
+                      <div className="h-px bg-[color:var(--line)] w-full"></div>
                       <div className="space-y-3">
                         {me?.isHost && (
                           <button
                             onClick={handleResetGame}
                             disabled={isBusy}
-                            className="w-full rounded-2xl bg-black py-3 text-[11px] font-semibold uppercase tracking-[0.35em] text-white hover:bg-black/90 disabled:opacity-60"
+                            className="w-full rounded-2xl bg-[var(--ink)] py-3 text-[11px] font-semibold uppercase tracking-[0.35em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
                           >
                             Nova podela uloga
                           </button>
                         )}
                         <button
                           onClick={handleLeaveRoom}
-                          className="w-full rounded-2xl border border-black/10 bg-white py-3 text-[10px] uppercase tracking-[0.35em] text-black/60 hover:text-black transition"
+                          className="w-full rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] py-3 text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] transition"
                         >
                           Napusti sobu
                         </button>
@@ -671,7 +709,7 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          <footer className="mt-8 flex items-center justify-center gap-2 text-[10px] uppercase tracking-[0.4em] text-black/40">
+          <footer className="mt-5 sm:mt-8 flex items-center justify-center gap-2 text-[10px] uppercase tracking-[0.4em] text-[color:var(--ink-soft)]">
             <i className="fas fa-fingerprint"></i>
             <span>Mafia Card Dealer</span>
           </footer>
