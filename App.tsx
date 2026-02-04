@@ -16,7 +16,12 @@ const normalizeSettings = (raw: any): RoomSettings => ({
   detective: typeof raw?.detective === 'boolean' ? raw.detective : true,
 });
 
+type EntryMode = 'join' | 'create';
+
+const generateRoomCode = () => Math.floor(100000 + Math.random() * 900000).toString();
+
 const App: React.FC = () => {
+  const [entryMode, setEntryMode] = useState<EntryMode>('join');
   const [phase, setPhase] = useState<GamePhase>(GamePhase.JOIN);
   const [playerName, setPlayerName] = useState('');
   const [roomCode, setRoomCode] = useState('');
@@ -24,6 +29,7 @@ const App: React.FC = () => {
   const [room, setRoom] = useState<RoomData | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [draftSettings, setDraftSettings] = useState<RoomSettings>(DEFAULT_SETTINGS);
   const [clientId] = useState(() => {
     const stored = localStorage.getItem('mafia_client_id');
     if (stored) return stored;
@@ -126,13 +132,19 @@ const App: React.FC = () => {
     if (!playerName.trim() || !roomCode.trim()) return;
     setErrorMessage('');
     setIsBusy(true);
-    const normalizedCode = roomCode.trim().toUpperCase();
+    const normalizedCode = roomCode.replace(/\D/g, '').slice(0, 6);
+    if (normalizedCode.length !== 6) {
+      setIsBusy(false);
+      setErrorMessage('Unesi šifru od 6 cifara.');
+      return;
+    }
 
     try {
       const { roomId: createdRoomId } = await joinRoom({
         roomCode: normalizedCode,
         playerName: playerName.trim(),
         clientId,
+        settings: entryMode === 'create' ? draftSettings : undefined,
       });
       setRoomCode(normalizedCode);
       setRoomId(createdRoomId);
@@ -195,6 +207,28 @@ const App: React.FC = () => {
   const players = room?.players ?? [];
   const settings = room?.settings ?? DEFAULT_SETTINGS;
 
+  const handleModeChange = (mode: EntryMode) => {
+    setEntryMode(mode);
+    setErrorMessage('');
+    if (mode === 'create') {
+      setRoomCode(generateRoomCode());
+      setDraftSettings(DEFAULT_SETTINGS);
+    } else {
+      setRoomCode('');
+    }
+  };
+
+  const handleDraftMafiaChange = (delta: number) => {
+    setDraftSettings((prev) => ({
+      ...prev,
+      mafiaCount: Math.max(1, prev.mafiaCount + delta),
+    }));
+  };
+
+  const toggleDraftSetting = (key: 'doctor' | 'detective') => {
+    setDraftSettings((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
   return (
     <div className="min-h-screen bg-[#050505] text-[#eee] flex flex-col items-center justify-center p-6 font-sans">
       <div className="w-full max-w-sm bg-[#111] border border-[#222] rounded-3xl p-8 shadow-2xl">
@@ -215,24 +249,106 @@ const App: React.FC = () => {
         {/* PHASE: JOIN */}
         {phase === GamePhase.JOIN && (
           <div className="space-y-4">
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => handleModeChange('create')}
+                className={`flex-1 py-2 rounded-xl text-xs uppercase tracking-widest font-bold transition-colors ${
+                  entryMode === 'create' ? 'bg-red-700 text-white' : 'bg-[#1a1a1a] text-gray-400'
+                }`}
+              >
+                Kreiraj
+              </button>
+              <button
+                type="button"
+                onClick={() => handleModeChange('join')}
+                className={`flex-1 py-2 rounded-xl text-xs uppercase tracking-widest font-bold transition-colors ${
+                  entryMode === 'join' ? 'bg-red-700 text-white' : 'bg-[#1a1a1a] text-gray-400'
+                }`}
+              >
+                Pridruži se
+              </button>
+            </div>
             <input
               className="w-full bg-[#1a1a1a] border border-[#333] p-4 rounded-2xl outline-none focus:border-red-700 transition-colors"
               placeholder="Tvoje ime"
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value)}
             />
-            <input
-              className="w-full bg-[#1a1a1a] border border-[#333] p-4 rounded-2xl outline-none focus:border-red-700 transition-colors uppercase font-mono"
-              placeholder="Šifra sobe"
-              value={roomCode}
-              onChange={(e) => setRoomCode(e.target.value)}
-            />
+            {entryMode === 'join' ? (
+              <input
+                className="w-full bg-[#1a1a1a] border border-[#333] p-4 rounded-2xl outline-none focus:border-red-700 transition-colors uppercase font-mono tracking-widest"
+                placeholder="Šifra sobe (6 cifara)"
+                value={roomCode}
+                onChange={(e) => setRoomCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                inputMode="numeric"
+              />
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    className="flex-1 bg-[#1a1a1a] border border-[#333] p-4 rounded-2xl outline-none uppercase font-mono tracking-[0.4em] text-center"
+                    value={roomCode}
+                    readOnly
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setRoomCode(generateRoomCode())}
+                    className="px-3 py-2 rounded-xl bg-[#1a1a1a] border border-[#333] text-[10px] uppercase tracking-widest text-gray-400"
+                  >
+                    Novi kod
+                  </button>
+                </div>
+                <div className="bg-[#0e0e0e] border border-[#222] rounded-2xl p-4 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-gray-400">Broj Mafijaša:</span>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        type="button"
+                        onClick={() => handleDraftMafiaChange(-1)}
+                        className="w-8 h-8 bg-[#222] rounded-lg"
+                      >
+                        -
+                      </button>
+                      <span className="font-bold text-red-500">{draftSettings.mafiaCount}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleDraftMafiaChange(1)}
+                        className="w-8 h-8 bg-[#222] rounded-lg"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleDraftSetting('doctor')}
+                      className={`flex-1 py-2 rounded-xl text-[11px] uppercase tracking-widest font-bold ${
+                        draftSettings.doctor ? 'bg-green-700 text-white' : 'bg-[#1a1a1a] text-gray-400'
+                      }`}
+                    >
+                      Doktor
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleDraftSetting('detective')}
+                      className={`flex-1 py-2 rounded-xl text-[11px] uppercase tracking-widest font-bold ${
+                        draftSettings.detective ? 'bg-yellow-700 text-white' : 'bg-[#1a1a1a] text-gray-400'
+                      }`}
+                    >
+                      Inspektor
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
             <button
               onClick={handleJoin}
               disabled={isBusy}
               className="w-full bg-red-700 hover:bg-red-600 disabled:opacity-60 text-white font-bold py-4 rounded-2xl transition-transform active:scale-95 shadow-lg shadow-red-900/20"
             >
-              Uđi u sobu
+              {entryMode === 'create' ? 'Kreiraj sobu' : 'Uđi u sobu'}
             </button>
           </div>
         )}

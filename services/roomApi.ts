@@ -21,6 +21,7 @@ export async function joinRoom(payload: {
   roomCode: string;
   playerName: string;
   clientId: string;
+  settings?: { mafiaCount: number; doctor: boolean; detective: boolean };
 }): Promise<{ roomId: string }> {
   return postJson<{ roomId: string }>('/api/rooms/join', payload);
 }

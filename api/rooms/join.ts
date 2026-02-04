@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '../_shared/supabase.js';
-import { DEFAULT_SETTINGS, normalizeRoomCode } from '../_shared/roomUtils.js';
+import { DEFAULT_SETTINGS, normalizeRoomCode, sanitizeSettings } from '../_shared/roomUtils.js';
 
 const toJson = (res: any, status: number, payload: any) => {
   res.status(status).json(payload);
@@ -14,6 +14,7 @@ export default async function handler(req: any, res: any) {
   const roomCode = String(body?.roomCode || '').trim();
   const playerName = String(body?.playerName || '').trim();
   const clientId = String(body?.clientId || '').trim();
+  const settingsInput = body?.settings;
 
   if (!roomCode || !playerName || !clientId) {
     return toJson(res, 400, { error: 'Missing roomCode, playerName, or clientId' });
@@ -32,9 +33,10 @@ export default async function handler(req: any, res: any) {
   }
 
   if (!room) {
+    const settings = settingsInput ? sanitizeSettings(settingsInput) : DEFAULT_SETTINGS;
     const { data: createdRoom, error: createRoomError } = await supabaseAdmin
       .from('rooms')
-      .insert({ code, status: 'waiting', settings: DEFAULT_SETTINGS })
+      .insert({ code, status: 'waiting', settings })
       .select('id')
       .single();
 
