@@ -352,9 +352,17 @@ const App: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleCopyCode}
-                    className="px-3 py-2 rounded-xl bg-[#1a1a1a] border border-[#333] text-[10px] uppercase tracking-widest text-gray-400"
+                    className="w-10 h-10 rounded-xl bg-[#1a1a1a] border border-[#333] flex items-center justify-center"
+                    aria-label="Kopiraj kod"
+                    title={copyStatus === 'copied' ? 'Kopirano' : copyStatus === 'error' ? 'Greška' : 'Kopiraj'}
                   >
-                    {copyStatus === 'copied' ? 'Kopirano' : copyStatus === 'error' ? 'Greška' : 'Kopiraj'}
+                    {copyStatus === 'copied' ? (
+                      <i className="fas fa-check text-green-500 text-sm"></i>
+                    ) : copyStatus === 'error' ? (
+                      <i className="fas fa-times text-red-500 text-sm"></i>
+                    ) : (
+                      <img src="/copy-icon.png" alt="Kopiraj" className="w-4 h-4 opacity-80" />
+                    )}
                   </button>
                 </div>
                 <div className="bg-[#0e0e0e] border border-[#222] rounded-2xl p-4 space-y-3">
