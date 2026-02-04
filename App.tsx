@@ -420,7 +420,7 @@ const App: React.FC = () => {
             <div className="bg-[#1a1a1a] py-12 rounded-3xl border-2 border-red-900/30 shadow-inner relative group cursor-pointer overflow-hidden">
               {/* Overlay da se uloga ne vidi odmah */}
               <div className="absolute inset-0 bg-[#111] border border-[#333] rounded-3xl flex items-center justify-center z-10 group-active:opacity-0 transition-opacity duration-300">
-                <span className="text-red-700 font-black tracking-widest uppercase">DRŽI ZA PRIKAZ</span>
+                <span className="text-red-700 font-black tracking-widest uppercase select-none">DRŽI ZA PRIKAZ</span>
               </div>
 
               <div className="flex flex-col items-center">
