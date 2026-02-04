@@ -499,7 +499,7 @@ const App: React.FC = () => {
                 </button>
                 <button
                   onClick={handleLeaveRoom}
-                  className="w-full text-gray-400 text-[10px] uppercase tracking-widest hover:text-white transition-colors"
+                  className="w-full border border-[#333] bg-[#0e0e0e] text-gray-300 text-xs uppercase tracking-widest py-3 rounded-2xl hover:text-white transition-colors"
                 >
                   Napusti sobu
                 </button>
@@ -511,7 +511,7 @@ const App: React.FC = () => {
                 </p>
                 <button
                   onClick={handleLeaveRoom}
-                  className="text-gray-500 text-[10px] uppercase tracking-widest hover:text-white transition-colors"
+                  className="w-full border border-[#333] bg-[#0e0e0e] text-gray-300 text-xs uppercase tracking-widest py-3 rounded-2xl hover:text-white transition-colors"
                 >
                   Napusti sobu
                 </button>
@@ -573,7 +573,7 @@ const App: React.FC = () => {
             </div>
             <button
               onClick={handleLeaveRoom}
-              className="text-gray-500 text-[10px] uppercase tracking-widest hover:text-white transition-colors"
+              className="w-full border border-[#333] bg-[#0e0e0e] text-gray-300 text-xs uppercase tracking-widest py-3 rounded-2xl hover:text-white transition-colors"
             >
               Napusti sobu
             </button>
