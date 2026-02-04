@@ -338,21 +338,21 @@ const App: React.FC = () => {
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <input
-                    className="flex-1 bg-[#1a1a1a] border border-[#333] p-4 rounded-2xl outline-none uppercase font-mono tracking-[0.4em] text-center"
+                    className="min-w-0 flex-1 bg-[#1a1a1a] border border-[#333] p-3 sm:p-4 rounded-2xl outline-none uppercase font-mono tracking-[0.2em] sm:tracking-[0.4em] text-center text-sm sm:text-base"
                     value={roomCode}
                     readOnly
                   />
                   <button
                     type="button"
                     onClick={() => setRoomCode(generateRoomCode())}
-                    className="px-3 py-2 rounded-xl bg-[#1a1a1a] border border-[#333] text-[10px] uppercase tracking-widest text-gray-400"
+                    className="px-2 sm:px-3 py-2 rounded-xl bg-[#1a1a1a] border border-[#333] text-[9px] sm:text-[10px] uppercase tracking-widest text-gray-400"
                   >
                     Novi kod
                   </button>
                   <button
                     type="button"
                     onClick={handleCopyCode}
-                    className="w-10 h-10 rounded-xl bg-[#1a1a1a] border border-[#333] flex items-center justify-center"
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#1a1a1a] border border-[#333] flex items-center justify-center"
                     aria-label="Kopiraj kod"
                     title={copyStatus === 'copied' ? 'Kopirano' : copyStatus === 'error' ? 'Greška' : 'Kopiraj'}
                   >
