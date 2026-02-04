@@ -260,7 +260,7 @@ const App: React.FC = () => {
     <button
       type="button"
       onClick={handleThemeToggle}
-      className="hidden md:flex fixed right-4 top-4 sm:right-6 sm:top-6 z-50 h-11 w-11 items-center justify-center rounded-full border border-[color:var(--line)] bg-[var(--surface-strong)] text-[color:var(--ink)] shadow-sm hover:opacity-80 transition"
+      className="hidden md:flex fixed right-4 top-4 sm:right-6 sm:top-6 z-50 h-11 w-11 items-center justify-center rounded-full border border-[color:var(--line)] bg-[var(--surface-strong)] text-[color:var(--ink)] hover:opacity-80 transition"
       aria-label="Promeni temu"
       title={theme === 'light' ? 'Tamna tema' : 'Svetla tema'}
     >
@@ -272,7 +272,7 @@ const App: React.FC = () => {
     <button
       type="button"
       onClick={handleThemeToggle}
-      className="md:hidden h-10 w-10 rounded-full border border-[color:var(--line)] bg-[var(--surface-strong)] text-[color:var(--ink)] shadow-sm hover:opacity-80 transition"
+      className="md:hidden h-10 w-10 rounded-full border border-[color:var(--line)] bg-[var(--surface-strong)] text-[color:var(--ink)] hover:opacity-80 transition"
       aria-label="Promeni temu"
       title={theme === 'light' ? 'Tamna tema' : 'Svetla tema'}
     >
@@ -342,7 +342,7 @@ const App: React.FC = () => {
       <div className="app-bg">
         {themeToggleFloating}
         <div className="app-shell flex min-h-screen items-center justify-center px-4 py-6 sm:px-5 sm:py-12">
-          <div className="w-full max-w-md rounded-[28px] border border-[color:var(--line)] bg-[var(--surface)] px-6 py-8 sm:px-8 sm:py-10 shadow-[0_30px_80px_rgba(15,15,15,0.18)] backdrop-blur relative">
+          <div className="w-full max-w-md rounded-[28px] border border-[color:var(--line)] bg-[var(--surface)] px-6 py-8 sm:px-8 sm:py-10 relative">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-[11px] uppercase tracking-[0.4em] text-[color:var(--ink-faint)]">Priprema</p>
@@ -372,7 +372,7 @@ const App: React.FC = () => {
         <div className="w-full max-w-5xl">
           <div className="relative">
             <div className="absolute -inset-1 rounded-[36px] bg-gradient-to-br from-red-600/25 via-amber-400/25 to-transparent blur-2xl"></div>
-            <div className="relative overflow-hidden rounded-[32px] border border-[color:var(--line)] bg-[var(--surface)] shadow-[0_35px_90px_rgba(12,12,12,0.18)] backdrop-blur">
+            <div className="relative overflow-hidden rounded-[32px] border border-[color:var(--line)] bg-[var(--surface)]">
               <div className="grid md:grid-cols-[280px,1fr]">
                 <aside className="flex flex-col gap-4 sm:gap-6 bg-[var(--surface-soft)] p-5 sm:p-6 md:p-8 border-b md:border-b-0 md:border-r border-[color:var(--line)]">
                   <div className="flex items-start justify-between gap-4">
@@ -385,7 +385,7 @@ const App: React.FC = () => {
                   </div>
 
                   {roomCode.length === 6 && (
-                    <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-4 shadow-sm">
+                    <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-4">
                       <p className="text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-faint)]">Sifra sobe</p>
                       <div className="mt-3 flex items-center justify-between gap-3">
                         <span className="font-mono text-xl tracking-[0.35em] text-[color:var(--ink)]">{roomCode.toUpperCase()}</span>
@@ -435,7 +435,7 @@ const App: React.FC = () => {
                           type="button"
                           onClick={() => handleModeChange('create')}
                           className={`flex-1 py-2 rounded-xl text-[11px] uppercase tracking-[0.3em] font-semibold transition-colors ${
-                            entryMode === 'create' ? 'bg-[var(--surface-strong)] text-[color:var(--ink)] shadow-sm' : 'text-[color:var(--ink-faint)]'
+                            entryMode === 'create' ? 'bg-[var(--surface-strong)] text-[color:var(--ink)]' : 'text-[color:var(--ink-faint)]'
                           }`}
                         >
                           Kreiraj
@@ -444,7 +444,7 @@ const App: React.FC = () => {
                           type="button"
                           onClick={() => handleModeChange('join')}
                           className={`flex-1 py-2 rounded-xl text-[11px] uppercase tracking-[0.3em] font-semibold transition-colors ${
-                            entryMode === 'join' ? 'bg-[var(--surface-strong)] text-[color:var(--ink)] shadow-sm' : 'text-[color:var(--ink-faint)]'
+                            entryMode === 'join' ? 'bg-[var(--surface-strong)] text-[color:var(--ink)]' : 'text-[color:var(--ink-faint)]'
                           }`}
                         >
                           Pridruzi se
@@ -528,7 +528,7 @@ const App: React.FC = () => {
                       <button
                         onClick={handleJoin}
                         disabled={isBusy}
-                        className="w-full rounded-2xl bg-red-600 text-white font-semibold py-4 uppercase tracking-[0.3em] text-xs shadow-[0_15px_30px_rgba(185,28,28,0.25)] hover:bg-red-500 disabled:opacity-60 transition"
+                        className="w-full rounded-2xl bg-red-600 text-white font-semibold py-4 uppercase tracking-[0.3em] text-xs hover:bg-red-500 disabled:opacity-60 transition"
                       >
                         {entryMode === 'create' ? 'Kreiraj sobu' : 'Udji u sobu'}
                       </button>
@@ -616,8 +616,8 @@ const App: React.FC = () => {
                     <div className="text-center space-y-6 sm:space-y-8">
                       <p className="text-sm text-[color:var(--ink-muted)] italic">Tvoja tajna uloga je...</p>
 
-                      <div className="relative overflow-hidden rounded-[28px] border border-[color:var(--line)] bg-[var(--surface-strong)] px-6 py-10 sm:py-12 shadow-sm group">
-                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--surface-strong)] backdrop-blur-sm transition-opacity duration-300 group-active:opacity-0">
+                      <div className="relative overflow-hidden rounded-[28px] border border-[color:var(--line)] bg-[var(--surface-strong)] px-6 py-10 sm:py-12 group">
+                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--surface-strong)] transition-opacity duration-300 group-active:opacity-0">
                           <span className="title-font text-base uppercase tracking-[0.4em] text-[color:var(--ink-muted)]">
                             Drzi za prikaz
                           </span>
@@ -635,7 +635,7 @@ const App: React.FC = () => {
                       <button
                         onClick={handleConfirm}
                         disabled={isBusy}
-                        className="w-full rounded-2xl bg-[var(--ink)] text-[color:var(--paper)] font-semibold py-4 uppercase tracking-[0.3em] text-xs shadow-[0_20px_40px_rgba(0,0,0,0.2)] disabled:opacity-60"
+                        className="w-full rounded-2xl bg-[var(--ink)] text-[color:var(--paper)] font-semibold py-4 uppercase tracking-[0.3em] text-xs disabled:opacity-60"
                       >
                         Video sam ulogu
                       </button>
