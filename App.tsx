@@ -296,329 +296,387 @@ const App: React.FC = () => {
 
   if (!hasRestoredSession) {
     return (
-      <div className="min-h-screen bg-[#050505] text-[#eee] flex flex-col items-center justify-center p-6 font-sans">
-        <div className="w-full max-w-sm bg-[#111] border border-[#222] rounded-3xl p-8 shadow-2xl text-center">
-          <div className="flex justify-center space-x-2 mb-4">
-            <div className="w-2 h-2 bg-red-700 rounded-full animate-bounce"></div>
-            <div className="w-2 h-2 bg-red-700 rounded-full animate-bounce [animation-delay:0.2s]"></div>
-            <div className="w-2 h-2 bg-red-700 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+      <div className="app-bg">
+        <div className="app-shell flex min-h-screen items-center justify-center px-5 py-12">
+          <div className="w-full max-w-md rounded-[28px] border border-black/10 bg-white/80 px-8 py-10 shadow-[0_30px_80px_rgba(15,15,15,0.18)] backdrop-blur">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.4em] text-black/45">Priprema</p>
+                <h1 className="title-font text-3xl text-black">MAFIJA</h1>
+                <p className="mt-2 text-xs text-black/60">Podesavamo sobu i konekciju.</p>
+              </div>
+              <div className="h-11 w-11 rounded-2xl border border-black/10 bg-white text-red-600 flex items-center justify-center shadow-sm">
+                <i className="fas fa-mask"></i>
+              </div>
+            </div>
+            <div className="mt-8 rounded-2xl border border-black/10 bg-[#f9f6f2] p-4">
+              <div className="flex justify-center space-x-2">
+                <div className="h-2.5 w-2.5 rounded-full bg-red-500 animate-bounce"></div>
+                <div className="h-2.5 w-2.5 rounded-full bg-red-500 animate-bounce [animation-delay:0.2s]"></div>
+                <div className="h-2.5 w-2.5 rounded-full bg-red-500 animate-bounce [animation-delay:0.4s]"></div>
+              </div>
+              <p className="mt-3 text-center text-[10px] uppercase tracking-[0.35em] text-black/45">Ucitavanje...</p>
+            </div>
           </div>
-          <p className="text-xs uppercase tracking-widest text-gray-500">Učitavanje...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-[#eee] flex flex-col items-center justify-center p-6 font-sans">
-      <div className="w-full max-w-sm bg-[#111] border border-[#222] rounded-3xl p-8 shadow-2xl">
-        {/* HEADER */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-black text-red-700 tracking-tighter uppercase mb-1">Mafia Card</h1>
-          <p className="text-[10px] text-gray-500 tracking-[0.3em] uppercase">Digitalni delilac uloga</p>
-          {roomCode && (
-            <div className="mt-4 inline-block bg-red-900/20 border border-red-900/40 px-4 py-1 rounded-full text-red-500 font-mono text-sm tracking-widest font-bold">
-              KOD: {roomCode.toUpperCase()}
-            </div>
-          )}
-          {errorMessage && (
-            <div className="mt-3 text-[11px] text-red-400">{errorMessage}</div>
-          )}
-        </div>
-
-        {/* PHASE: JOIN */}
-        {phase === GamePhase.JOIN && (
-          <div className="space-y-4">
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => handleModeChange('create')}
-                className={`flex-1 py-2 rounded-xl text-xs uppercase tracking-widest font-bold transition-colors ${
-                  entryMode === 'create' ? 'bg-red-700 text-white' : 'bg-[#1a1a1a] text-gray-400'
-                }`}
-              >
-                Kreiraj
-              </button>
-              <button
-                type="button"
-                onClick={() => handleModeChange('join')}
-                className={`flex-1 py-2 rounded-xl text-xs uppercase tracking-widest font-bold transition-colors ${
-                  entryMode === 'join' ? 'bg-red-700 text-white' : 'bg-[#1a1a1a] text-gray-400'
-                }`}
-              >
-                Pridruži se
-              </button>
-            </div>
-            <input
-              className="w-full bg-[#1a1a1a] border border-[#333] p-4 rounded-2xl outline-none focus:border-red-700 transition-colors"
-              placeholder="Tvoje ime"
-              value={playerName}
-              onChange={(event) => setPlayerName(event.target.value)}
-            />
-            {entryMode === 'join' ? (
-              <input
-                className="w-full bg-[#1a1a1a] border border-[#333] p-4 rounded-2xl outline-none focus:border-red-700 transition-colors uppercase font-mono tracking-widest"
-                placeholder="Šifra sobe (6 cifara)"
-                value={roomCode}
-                onChange={(event) => setRoomCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-                inputMode="numeric"
-              />
-            ) : (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <input
-                    className="min-w-0 flex-1 bg-[#1a1a1a] border border-[#333] p-3 sm:p-4 rounded-2xl outline-none uppercase font-mono tracking-[0.2em] sm:tracking-[0.4em] text-center text-sm sm:text-base"
-                    value={roomCode}
-                    readOnly
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setRoomCode(generateRoomCode())}
-                    className="h-9 sm:h-10 px-3 sm:px-4 rounded-xl bg-[#1a1a1a] border border-[#333] text-[9px] sm:text-[10px] uppercase tracking-widest text-gray-400 flex items-center justify-center"
-                  >
-                    Novi kod
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCopyCode}
-                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#1a1a1a] border border-[#333] flex items-center justify-center"
-                    aria-label="Kopiraj kod"
-                    title={copyStatus === 'copied' ? 'Kopirano' : copyStatus === 'error' ? 'Greška' : 'Kopiraj'}
-                  >
-                    {copyStatus === 'copied' ? (
-                      <i className="fas fa-check text-green-500 text-sm"></i>
-                    ) : copyStatus === 'error' ? (
-                      <i className="fas fa-times text-red-500 text-sm"></i>
-                    ) : (
-                      <img src="/copy-icon.png" alt="Kopiraj" className="w-4 h-4 opacity-80" />
-                    )}
-                  </button>
-                </div>
-                <div className="bg-[#0e0e0e] border border-[#222] rounded-2xl p-4 space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-gray-400">Broj Mafijaša:</span>
-                    <div className="flex items-center space-x-3">
-                      <button
-                        type="button"
-                        onClick={() => handleDraftMafiaChange(-1)}
-                        className="w-8 h-8 bg-[#222] rounded-lg"
-                      >
-                        -
-                      </button>
-                      <span className="font-bold text-red-500">{draftSettings.mafiaCount}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleDraftMafiaChange(1)}
-                        className="w-8 h-8 bg-[#222] rounded-lg"
-                      >
-                        +
-                      </button>
+    <div className="app-bg">
+      <div className="app-shell flex min-h-screen flex-col items-center justify-center px-5 py-12">
+        <div className="w-full max-w-5xl">
+          <div className="relative">
+            <div className="absolute -inset-1 rounded-[36px] bg-gradient-to-br from-red-600/25 via-amber-400/25 to-transparent blur-2xl"></div>
+            <div className="relative overflow-hidden rounded-[32px] border border-black/10 bg-white/80 shadow-[0_35px_90px_rgba(12,12,12,0.18)] backdrop-blur">
+              <div className="grid md:grid-cols-[280px,1fr]">
+                <aside className="flex flex-col gap-6 bg-[#f9f6f1] p-6 md:p-8 border-b md:border-b-0 md:border-r border-black/10">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-[0.4em] text-black/45">Nocna igra</p>
+                      <h1 className="title-font text-4xl md:text-5xl text-black">MAFIJA</h1>
+                      <p className="mt-2 text-sm text-black/60">Diskretan diler uloga za igru uzivo.</p>
+                    </div>
+                    <div className="h-12 w-12 rounded-2xl border border-black/10 bg-white text-red-600 flex items-center justify-center shadow-sm">
+                      <i className="fas fa-mask"></i>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => toggleDraftSetting('doctor')}
-                      className={`flex-1 py-2 rounded-xl text-[11px] uppercase tracking-widest font-bold ${
-                        draftSettings.doctor ? 'bg-green-700 text-white' : 'bg-[#1a1a1a] text-gray-400'
-                      }`}
-                    >
-                      Doktor
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => toggleDraftSetting('detective')}
-                      className={`flex-1 py-2 rounded-xl text-[11px] uppercase tracking-widest font-bold ${
-                        draftSettings.detective ? 'bg-yellow-700 text-white' : 'bg-[#1a1a1a] text-gray-400'
-                      }`}
-                    >
-                      Inspektor
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-            <button
-              onClick={handleJoin}
-              disabled={isBusy}
-              className="w-full bg-red-700 hover:bg-red-600 disabled:opacity-60 text-white font-bold py-4 rounded-2xl transition-transform active:scale-95 shadow-lg shadow-red-900/20"
-            >
-              {entryMode === 'create' ? 'Kreiraj sobu' : 'Uđi u sobu'}
-            </button>
-          </div>
-        )}
 
-        {/* PHASE: LOBBY */}
-        {phase === GamePhase.LOBBY && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center border-b border-[#222] pb-2">
-              <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest">
-                Igrači ({players.length})
-              </h2>
-              {me?.isHost && <span className="text-[10px] bg-red-900 text-white px-2 rounded">Ti si Host</span>}
-            </div>
-
-            <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-              {players.map((player) => (
-                <div key={player.id} className="flex justify-between items-center bg-[#1a1a1a] p-3 rounded-xl border border-[#222]">
-                  <span className="text-sm font-medium">
-                    {player.name} {player.clientId === clientId && "(Ti)"}
-                  </span>
-                  <i className="fas fa-check-circle text-green-800 text-xs"></i>
-                </div>
-              ))}
-            </div>
-
-            {me?.isHost ? (
-              <div className="space-y-4 pt-4 border-t border-[#222]">
-                <div className="flex justify-between items-center px-2">
-                  <span className="text-xs text-gray-400">Broj Mafijaša:</span>
-                  <div className="flex items-center space-x-3">
-                    <button
-                      onClick={() => handleMafiaCountChange(-1)}
-                      disabled={isBusy}
-                      className="w-8 h-8 bg-[#222] rounded-lg disabled:opacity-60"
-                    >
-                      -
-                    </button>
-                    <span className="font-bold text-red-500">{settings.mafiaCount}</span>
-                    <button
-                      onClick={() => handleMafiaCountChange(1)}
-                      disabled={isBusy}
-                      className="w-8 h-8 bg-[#222] rounded-lg disabled:opacity-60"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-                <button
-                  onClick={handleStart}
-                  disabled={isBusy}
-                  className="w-full bg-red-700 py-4 rounded-2xl font-bold uppercase tracking-widest text-sm disabled:opacity-60"
-                >
-                  Podeli uloge
-                </button>
-                <button
-                  onClick={handleLeaveRoom}
-                  className="w-full border border-[#333] bg-[#0e0e0e] text-gray-300 text-xs uppercase tracking-widest py-3 rounded-2xl hover:text-white transition-colors"
-                >
-                  Napusti sobu
-                </button>
-              </div>
-            ) : (
-              <div className="text-center space-y-3">
-                <p className="text-xs text-gray-500 italic animate-pulse">
-                  Čekamo da domaćin podeli uloge...
-                </p>
-                <button
-                  onClick={handleLeaveRoom}
-                  className="w-full border border-[#333] bg-[#0e0e0e] text-gray-300 text-xs uppercase tracking-widest py-3 rounded-2xl hover:text-white transition-colors"
-                >
-                  Napusti sobu
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* PHASE: REVEAL */}
-        {phase === GamePhase.REVEAL && (
-          <div className="text-center space-y-8 animate-in fade-in zoom-in duration-500">
-            <p className="text-gray-400 text-sm italic">Tvoja tajna uloga je...</p>
-
-            <div className="bg-[#1a1a1a] py-12 rounded-3xl border-2 border-red-900/30 shadow-inner relative group cursor-pointer overflow-hidden">
-              {/* Overlay da se uloga ne vidi odmah */}
-              <div className="absolute inset-0 bg-[#111] border border-[#333] rounded-3xl flex items-center justify-center z-10 group-active:opacity-0 transition-opacity duration-300">
-                <span className="text-red-700 font-black tracking-widest uppercase select-none">DRŽI ZA PRIKAZ</span>
-              </div>
-
-              <div className="flex flex-col items-center">
-                <div className="text-7xl mb-4">{ROLE_ICONS[me?.role || Role.VILLAGER]}</div>
-                <h3 className="text-3xl font-black text-white uppercase tracking-tighter">{me?.role}</h3>
-                <p className="text-[10px] text-gray-500 mt-2 px-6">
-                  {ROLE_DESCRIPTIONS[me?.role || Role.VILLAGER]}
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={handleConfirm}
-              disabled={isBusy}
-              className="w-full bg-white text-black font-black py-4 rounded-2xl uppercase tracking-widest text-sm shadow-xl disabled:opacity-60"
-            >
-              Video sam ulogu
-            </button>
-          </div>
-        )}
-
-        {/* PHASE: WAITING FOR OTHERS */}
-        {phase === GamePhase.WAITING_FOR_OTHERS && (
-          <div className="text-center space-y-6 py-8">
-            <div className="flex justify-center space-x-2">
-              <div className="w-2 h-2 bg-red-700 rounded-full animate-bounce"></div>
-              <div className="w-2 h-2 bg-red-700 rounded-full animate-bounce [animation-delay:0.2s]"></div>
-              <div className="w-2 h-2 bg-red-700 rounded-full animate-bounce [animation-delay:0.4s]"></div>
-            </div>
-            <h2 className="text-xl font-bold uppercase tracking-tighter">Čekamo ostale...</h2>
-            <div className="space-y-2">
-              {players.map((player) => (
-                <div key={player.id} className="text-[10px] uppercase tracking-widest flex justify-center items-center space-x-2">
-                  <span className={player.hasConfirmed ? 'text-green-500' : 'text-gray-600'}>{player.name}</span>
-                  {player.hasConfirmed ? (
-                    <i className="fas fa-check text-[8px]"></i>
-                  ) : (
-                    <i className="fas fa-clock text-[8px]"></i>
+                  {roomCode.length === 6 && (
+                    <div className="rounded-2xl border border-black/10 bg-white/90 p-4 shadow-sm">
+                      <p className="text-[10px] uppercase tracking-[0.35em] text-black/45">Sifra sobe</p>
+                      <div className="mt-3 flex items-center justify-between gap-3">
+                        <span className="font-mono text-xl tracking-[0.35em] text-black">{roomCode.toUpperCase()}</span>
+                        <button
+                          type="button"
+                          onClick={handleCopyCode}
+                          className="rounded-xl border border-black/10 bg-white px-3 py-2 text-[10px] uppercase tracking-[0.3em] text-black/70 hover:text-black transition"
+                        >
+                          {copyStatus === 'copied' ? 'Kopirano' : copyStatus === 'error' ? 'Greska' : 'Kopiraj'}
+                        </button>
+                      </div>
+                    </div>
                   )}
-                </div>
-              ))}
-            </div>
-            <button
-              onClick={handleLeaveRoom}
-              className="w-full border border-[#333] bg-[#0e0e0e] text-gray-300 text-xs uppercase tracking-widest py-3 rounded-2xl hover:text-white transition-colors"
-            >
-              Napusti sobu
-            </button>
-          </div>
-        )}
 
-        {/* PHASE: READY TO PLAY */}
-        {phase === GamePhase.READY_TO_PLAY && (
-          <div className="text-center space-y-8 py-4 animate-in slide-in-from-bottom duration-700">
-            <div className="text-6xl text-red-700">
-              <i className="fas fa-mask"></i>
-            </div>
-            <div>
-              <h2 className="text-3xl font-black uppercase tracking-tighter text-white">Spremni!</h2>
-              <p className="text-gray-500 text-sm mt-2 italic">
-                Svi igrači su videli svoje uloge. Odložite telefone i započnite igru uživo.
-              </p>
-            </div>
-            <div className="h-px bg-[#222] w-full"></div>
-            <div className="space-y-4 pt-2">
-              {me?.isHost && (
-                <button
-                  onClick={handleResetGame}
-                  disabled={isBusy}
-                  className="w-full bg-red-700 py-3 rounded-2xl font-bold uppercase tracking-widest text-sm disabled:opacity-60"
-                >
-                  Nova podela uloga
-                </button>
-              )}
-              <button
-                onClick={handleLeaveRoom}
-                className="w-full border border-[#333] bg-[#0e0e0e] text-gray-300 text-xs uppercase tracking-widest py-3 rounded-2xl hover:text-white transition-colors"
-              >
-                Napusti sobu
-              </button>
+                  {phase === GamePhase.JOIN && entryMode === 'create' && (
+                    <button
+                      type="button"
+                      onClick={() => setRoomCode(generateRoomCode())}
+                      className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-[10px] uppercase tracking-[0.35em] text-black/70 hover:text-black transition"
+                    >
+                      Novi kod
+                    </button>
+                  )}
+
+                  <div className="rounded-2xl border border-black/10 bg-white/80 p-4 text-xs text-black/60">
+                    <div className="flex items-center gap-2 text-black/60">
+                      <span className="h-2 w-2 rounded-full bg-red-500"></span>
+                      <span>Privatno deljenje uloga</span>
+                    </div>
+                    <p className="mt-2 leading-relaxed">
+                      Telefoni samo za uloge. Glasanje i eliminacije idu uzivo.
+                    </p>
+                  </div>
+                </aside>
+
+                <main className="p-6 md:p-10 bg-white/70">
+                  {errorMessage && (
+                    <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
+                      {errorMessage}
+                    </div>
+                  )}
+
+                  {phase === GamePhase.JOIN && (
+                    <div className="space-y-6">
+                      <div className="rounded-2xl border border-black/10 bg-black/5 p-1 flex">
+                        <button
+                          type="button"
+                          onClick={() => handleModeChange('create')}
+                          className={`flex-1 py-2 rounded-xl text-[11px] uppercase tracking-[0.3em] font-semibold transition-colors ${
+                            entryMode === 'create' ? 'bg-white text-black shadow-sm' : 'text-black/50'
+                          }`}
+                        >
+                          Kreiraj
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleModeChange('join')}
+                          className={`flex-1 py-2 rounded-xl text-[11px] uppercase tracking-[0.3em] font-semibold transition-colors ${
+                            entryMode === 'join' ? 'bg-white text-black shadow-sm' : 'text-black/50'
+                          }`}
+                        >
+                          Pridruzi se
+                        </button>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[11px] uppercase tracking-[0.3em] text-black/50">Ime igraca</label>
+                        <input
+                          className="w-full rounded-2xl border border-black/10 bg-white/90 px-4 py-3 text-sm text-black placeholder:text-black/40 focus:outline-none focus:ring-2 focus:ring-red-400/50"
+                          placeholder="Tvoje ime"
+                          value={playerName}
+                          onChange={(event) => setPlayerName(event.target.value)}
+                        />
+                      </div>
+
+                      {entryMode === 'join' ? (
+                        <div className="space-y-2">
+                          <label className="text-[11px] uppercase tracking-[0.3em] text-black/50">Sifra sobe</label>
+                          <input
+                            className="w-full rounded-2xl border border-black/10 bg-white/90 px-4 py-3 text-sm uppercase font-mono tracking-[0.35em] text-black placeholder:text-black/40 focus:outline-none focus:ring-2 focus:ring-red-400/50"
+                            placeholder="6 cifara"
+                            value={roomCode}
+                            onChange={(event) => setRoomCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                            inputMode="numeric"
+                          />
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl border border-black/10 bg-[#f9f6f1] p-4 space-y-4">
+                          <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.35em] text-black/50">
+                            <span>Postavke sobe</span>
+                            <span className="text-black/40">Host</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-black/70">Broj Mafijasa</span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleDraftMafiaChange(-1)}
+                                className="h-9 w-9 rounded-xl border border-black/10 bg-white text-sm font-semibold text-black/70 hover:text-black"
+                              >
+                                -
+                              </button>
+                              <span className="w-8 text-center font-semibold text-black">{draftSettings.mafiaCount}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleDraftMafiaChange(1)}
+                                className="h-9 w-9 rounded-xl border border-black/10 bg-white text-sm font-semibold text-black/70 hover:text-black"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => toggleDraftSetting('doctor')}
+                              className={`rounded-xl py-2 text-[10px] uppercase tracking-[0.3em] font-semibold ${
+                                draftSettings.doctor
+                                  ? 'bg-emerald-600 text-white'
+                                  : 'bg-white text-black/60 border border-black/10'
+                              }`}
+                            >
+                              Doktor
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => toggleDraftSetting('detective')}
+                              className={`rounded-xl py-2 text-[10px] uppercase tracking-[0.3em] font-semibold ${
+                                draftSettings.detective
+                                  ? 'bg-amber-500 text-white'
+                                  : 'bg-white text-black/60 border border-black/10'
+                              }`}
+                            >
+                              Inspektor
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      <button
+                        onClick={handleJoin}
+                        disabled={isBusy}
+                        className="w-full rounded-2xl bg-red-600 text-white font-semibold py-4 uppercase tracking-[0.3em] text-xs shadow-[0_15px_30px_rgba(185,28,28,0.25)] hover:bg-red-500 disabled:opacity-60 transition"
+                      >
+                        {entryMode === 'create' ? 'Kreiraj sobu' : 'Udji u sobu'}
+                      </button>
+                    </div>
+                  )}
+
+                  {phase === GamePhase.LOBBY && (
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <h2 className="text-[11px] uppercase tracking-[0.35em] text-black/50">
+                          Igraci ({players.length})
+                        </h2>
+                        {me?.isHost && (
+                          <span className="rounded-full bg-black text-white text-[10px] px-3 py-1 uppercase tracking-[0.3em]">
+                            Host
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                        {players.map((player) => (
+                          <div
+                            key={player.id}
+                            className="flex items-center justify-between rounded-2xl border border-black/10 bg-white/80 px-4 py-3"
+                          >
+                            <span className="text-sm font-medium text-black/80">
+                              {player.name} {player.clientId === clientId && '(Ti)'}
+                            </span>
+                            <i className="fas fa-check-circle text-emerald-600 text-xs"></i>
+                          </div>
+                        ))}
+                      </div>
+
+                      {me?.isHost ? (
+                        <div className="rounded-2xl border border-black/10 bg-[#f9f6f1] p-4 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-black/70">Broj Mafijasa</span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleMafiaCountChange(-1)}
+                                disabled={isBusy}
+                                className="h-9 w-9 rounded-xl border border-black/10 bg-white text-sm font-semibold text-black/70 hover:text-black disabled:opacity-60"
+                              >
+                                -
+                              </button>
+                              <span className="w-8 text-center font-semibold text-black">{settings.mafiaCount}</span>
+                              <button
+                                onClick={() => handleMafiaCountChange(1)}
+                                disabled={isBusy}
+                                className="h-9 w-9 rounded-xl border border-black/10 bg-white text-sm font-semibold text-black/70 hover:text-black disabled:opacity-60"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                          <button
+                            onClick={handleStart}
+                            disabled={isBusy}
+                            className="w-full rounded-2xl bg-black py-3 text-[11px] font-semibold uppercase tracking-[0.35em] text-white hover:bg-black/90 disabled:opacity-60"
+                          >
+                            Podeli uloge
+                          </button>
+                          <button
+                            onClick={handleLeaveRoom}
+                            className="w-full rounded-2xl border border-black/10 bg-white py-3 text-[10px] uppercase tracking-[0.35em] text-black/60 hover:text-black transition"
+                          >
+                            Napusti sobu
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl border border-black/10 bg-white/80 p-4 text-center space-y-4">
+                          <p className="text-xs text-black/60 italic">Cekamo da domacin podeli uloge...</p>
+                          <button
+                            onClick={handleLeaveRoom}
+                            className="w-full rounded-2xl border border-black/10 bg-white py-3 text-[10px] uppercase tracking-[0.35em] text-black/60 hover:text-black transition"
+                          >
+                            Napusti sobu
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {phase === GamePhase.REVEAL && (
+                    <div className="text-center space-y-8">
+                      <p className="text-sm text-black/60 italic">Tvoja tajna uloga je...</p>
+
+                      <div className="relative overflow-hidden rounded-[28px] border border-black/10 bg-white/90 px-6 py-12 shadow-sm group">
+                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/90 backdrop-blur-sm transition-opacity duration-300 group-active:opacity-0">
+                          <span className="title-font text-base uppercase tracking-[0.4em] text-black/70">
+                            Drzi za prikaz
+                          </span>
+                        </div>
+
+                        <div className="relative flex flex-col items-center">
+                          <div className="text-6xl mb-4">{ROLE_ICONS[me?.role || Role.VILLAGER]}</div>
+                          <h3 className="title-font text-3xl text-black uppercase tracking-tight">{me?.role}</h3>
+                          <p className="mt-3 text-xs text-black/55 px-4">
+                            {ROLE_DESCRIPTIONS[me?.role || Role.VILLAGER]}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={handleConfirm}
+                        disabled={isBusy}
+                        className="w-full rounded-2xl bg-black text-white font-semibold py-4 uppercase tracking-[0.3em] text-xs shadow-[0_20px_40px_rgba(0,0,0,0.2)] disabled:opacity-60"
+                      >
+                        Video sam ulogu
+                      </button>
+                    </div>
+                  )}
+
+                  {phase === GamePhase.WAITING_FOR_OTHERS && (
+                    <div className="text-center space-y-6 py-6">
+                      <div className="flex justify-center space-x-2">
+                        <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-bounce"></div>
+                        <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                        <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+                      </div>
+                      <h2 className="title-font text-2xl text-black">Cekamo ostale...</h2>
+                      <div className="rounded-2xl border border-black/10 bg-white/80 p-4 space-y-2">
+                        {players.map((player) => (
+                          <div
+                            key={player.id}
+                            className="text-[10px] uppercase tracking-[0.35em] flex justify-between items-center"
+                          >
+                            <span className={player.hasConfirmed ? 'text-emerald-600' : 'text-black/40'}>
+                              {player.name}
+                            </span>
+                            {player.hasConfirmed ? (
+                              <i className="fas fa-check text-[10px]"></i>
+                            ) : (
+                              <i className="fas fa-clock text-[10px] text-black/40"></i>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        onClick={handleLeaveRoom}
+                        className="w-full rounded-2xl border border-black/10 bg-white py-3 text-[10px] uppercase tracking-[0.35em] text-black/60 hover:text-black transition"
+                      >
+                        Napusti sobu
+                      </button>
+                    </div>
+                  )}
+
+                  {phase === GamePhase.READY_TO_PLAY && (
+                    <div className="text-center space-y-6 py-4">
+                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-red-600 text-white shadow-[0_18px_40px_rgba(185,28,28,0.25)]">
+                        <i className="fas fa-mask"></i>
+                      </div>
+                      <div>
+                        <h2 className="title-font text-3xl text-black">Spremni!</h2>
+                        <p className="mt-2 text-sm text-black/60">
+                          Svi igraci su videli svoje uloge. Odlozite telefone i pocnite igru uzivo.
+                        </p>
+                      </div>
+                      <div className="h-px bg-black/10 w-full"></div>
+                      <div className="space-y-3">
+                        {me?.isHost && (
+                          <button
+                            onClick={handleResetGame}
+                            disabled={isBusy}
+                            className="w-full rounded-2xl bg-black py-3 text-[11px] font-semibold uppercase tracking-[0.35em] text-white hover:bg-black/90 disabled:opacity-60"
+                          >
+                            Nova podela uloga
+                          </button>
+                        )}
+                        <button
+                          onClick={handleLeaveRoom}
+                          className="w-full rounded-2xl border border-black/10 bg-white py-3 text-[10px] uppercase tracking-[0.35em] text-black/60 hover:text-black transition"
+                        >
+                          Napusti sobu
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </main>
+              </div>
             </div>
           </div>
-        )}
+
+          <footer className="mt-8 flex items-center justify-center gap-2 text-[10px] uppercase tracking-[0.4em] text-black/40">
+            <i className="fas fa-fingerprint"></i>
+            <span>Mafia Card Dealer</span>
+          </footer>
+        </div>
       </div>
-
-      <footer className="mt-12 text-[10px] text-gray-700 tracking-[0.5em] uppercase flex items-center space-x-2">
-        <i className="fas fa-fingerprint"></i>
-        <span>Mafia Card Dealer</span>
-      </footer>
     </div>
   );
 };
