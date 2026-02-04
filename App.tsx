@@ -293,6 +293,21 @@ const App: React.FC = () => {
     setHasRestoredSession(true);
   }, [hasRestoredSession]);
 
+  if (!hasRestoredSession) {
+    return (
+      <div className="min-h-screen bg-[#050505] text-[#eee] flex flex-col items-center justify-center p-6 font-sans">
+        <div className="w-full max-w-sm bg-[#111] border border-[#222] rounded-3xl p-8 shadow-2xl text-center">
+          <div className="flex justify-center space-x-2 mb-4">
+            <div className="w-2 h-2 bg-red-700 rounded-full animate-bounce"></div>
+            <div className="w-2 h-2 bg-red-700 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+            <div className="w-2 h-2 bg-red-700 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+          </div>
+          <p className="text-xs uppercase tracking-widest text-gray-500">Učitavanje...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#050505] text-[#eee] flex flex-col items-center justify-center p-6 font-sans">
       <div className="w-full max-w-sm bg-[#111] border border-[#222] rounded-3xl p-8 shadow-2xl">
