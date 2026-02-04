@@ -618,7 +618,7 @@ const App: React.FC = () => {
 
                       <div className="relative overflow-hidden rounded-[28px] border border-[color:var(--line)] bg-[var(--surface-strong)] px-6 py-10 sm:py-12 group">
                         <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--surface-strong)] transition-opacity duration-300 group-active:opacity-0">
-                          <span className="title-font text-base uppercase tracking-[0.4em] text-[color:var(--ink-muted)]">
+                          <span className="title-font text-base uppercase tracking-[0.4em] text-[color:var(--ink-muted)] select-none">
                             Drzi za prikaz
                           </span>
                         </div>
