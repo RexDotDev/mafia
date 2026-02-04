@@ -593,7 +593,7 @@ const App: React.FC = () => {
               </p>
             </div>
             <div className="h-px bg-[#222] w-full"></div>
-            <div className="space-y-3">
+            <div className="space-y-4 pt-2">
               {me?.isHost && (
                 <button
                   onClick={handleResetGame}
@@ -605,7 +605,7 @@ const App: React.FC = () => {
               )}
               <button
                 onClick={handleLeaveRoom}
-                className="w-full text-gray-500 text-[10px] uppercase tracking-widest hover:text-white transition-colors"
+                className="w-full border border-[#333] bg-[#0e0e0e] text-gray-300 text-xs uppercase tracking-widest py-3 rounded-2xl hover:text-white transition-colors"
               >
                 Napusti sobu
               </button>
