@@ -265,8 +265,9 @@ const App: React.FC = () => {
     localStorage.removeItem(SESSION_KEY);
     setRoom(null);
     setRoomId(null);
-    setRoomCode('');
+    setRoomCode(generateRoomCode());
     setPhase(GamePhase.JOIN);
+    setEntryMode('create');
   };
 
   useEffect(() => {
