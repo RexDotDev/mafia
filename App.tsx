@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { GamePhase, Role, RoomData, RoomSettings } from './types';
 import { ROLE_ICONS, ROLE_DESCRIPTIONS } from './constants';
 import { supabase } from './services/supabaseClient';
-import { confirmRole, joinRoom, startGame, updateSettings } from './services/roomApi';
+import { confirmRole, joinRoom, resetGame, startGame, updateSettings } from './services/roomApi';
 
 const DEFAULT_SETTINGS: RoomSettings = {
   mafiaCount: 1,
@@ -64,13 +64,13 @@ const App: React.FC = () => {
       return;
     }
 
-    const players = (playerRows || []).map((p: any) => ({
-      id: p.id,
-      clientId: p.client_id,
-      name: p.name,
-      role: p.role || undefined,
-      hasConfirmed: !!p.has_confirmed,
-      isHost: !!p.is_host,
+    const players = (playerRows || []).map((player: any) => ({
+      id: player.id,
+      clientId: player.client_id,
+      name: player.name,
+      role: player.role || undefined,
+      hasConfirmed: !!player.has_confirmed,
+      isHost: !!player.is_host,
     }));
 
     setRoom({
@@ -248,6 +248,19 @@ const App: React.FC = () => {
     setDraftSettings((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const handleResetGame = async () => {
+    if (!roomCode) return;
+    setErrorMessage('');
+    setIsBusy(true);
+    try {
+      await resetGame({ roomCode, clientId });
+    } catch (error: any) {
+      setErrorMessage(error?.message || 'Neuspešno resetovanje.');
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
   const handleLeaveRoom = () => {
     localStorage.removeItem(SESSION_KEY);
     setRoom(null);
@@ -324,14 +337,14 @@ const App: React.FC = () => {
               className="w-full bg-[#1a1a1a] border border-[#333] p-4 rounded-2xl outline-none focus:border-red-700 transition-colors"
               placeholder="Tvoje ime"
               value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
+              onChange={(event) => setPlayerName(event.target.value)}
             />
             {entryMode === 'join' ? (
               <input
                 className="w-full bg-[#1a1a1a] border border-[#333] p-4 rounded-2xl outline-none focus:border-red-700 transition-colors uppercase font-mono tracking-widest"
                 placeholder="Šifra sobe (6 cifara)"
                 value={roomCode}
-                onChange={(e) => setRoomCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                onChange={(event) => setRoomCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
                 inputMode="numeric"
               />
             ) : (
@@ -557,18 +570,23 @@ const App: React.FC = () => {
               </p>
             </div>
             <div className="h-px bg-[#222] w-full"></div>
-            <button
-              onClick={() => window.location.reload()}
-              className="text-gray-500 text-[10px] uppercase tracking-widest hover:text-white transition-colors"
-            >
-              Nova podela uloga
-            </button>
-            <button
-              onClick={handleLeaveRoom}
-              className="text-gray-500 text-[10px] uppercase tracking-widest hover:text-white transition-colors"
-            >
-              Napusti sobu
-            </button>
+            <div className="space-y-3">
+              {me?.isHost && (
+                <button
+                  onClick={handleResetGame}
+                  disabled={isBusy}
+                  className="w-full bg-red-700 py-3 rounded-2xl font-bold uppercase tracking-widest text-sm disabled:opacity-60"
+                >
+                  Nova podela uloga
+                </button>
+              )}
+              <button
+                onClick={handleLeaveRoom}
+                className="w-full text-gray-500 text-[10px] uppercase tracking-widest hover:text-white transition-colors"
+              >
+                Napusti sobu
+              </button>
+            </div>
           </div>
         )}
       </div>
