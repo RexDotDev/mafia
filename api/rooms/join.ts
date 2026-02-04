@@ -33,7 +33,10 @@ export default async function handler(req: any, res: any) {
   }
 
   if (!room) {
-    const settings = settingsInput ? sanitizeSettings(settingsInput) : DEFAULT_SETTINGS;
+    if (!settingsInput) {
+      return toJson(res, 404, { error: 'Soba ne postoji.' });
+    }
+    const settings = sanitizeSettings(settingsInput);
     const { data: createdRoom, error: createRoomError } = await supabaseAdmin
       .from('rooms')
       .insert({ code, status: 'waiting', settings })
