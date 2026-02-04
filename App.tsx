@@ -248,6 +248,14 @@ const App: React.FC = () => {
     setDraftSettings((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const handleLeaveRoom = () => {
+    localStorage.removeItem(SESSION_KEY);
+    setRoom(null);
+    setRoomId(null);
+    setRoomCode('');
+    setPhase(GamePhase.JOIN);
+  };
+
   useEffect(() => {
     if (hasRestoredSession) return;
     const raw = localStorage.getItem(SESSION_KEY);
@@ -453,6 +461,12 @@ const App: React.FC = () => {
                 >
                   Podeli uloge
                 </button>
+                <button
+                  onClick={handleLeaveRoom}
+                  className="w-full text-gray-400 text-[10px] uppercase tracking-widest hover:text-white transition-colors"
+                >
+                  Napusti sobu
+                </button>
               </div>
             ) : (
               <p className="text-center text-xs text-gray-500 italic animate-pulse">
@@ -513,6 +527,12 @@ const App: React.FC = () => {
                 </div>
               ))}
             </div>
+            <button
+              onClick={handleLeaveRoom}
+              className="text-gray-500 text-[10px] uppercase tracking-widest hover:text-white transition-colors"
+            >
+              Napusti sobu
+            </button>
           </div>
         )}
 
@@ -534,6 +554,12 @@ const App: React.FC = () => {
               className="text-gray-500 text-[10px] uppercase tracking-widest hover:text-white transition-colors"
             >
               Nova podela uloga
+            </button>
+            <button
+              onClick={handleLeaveRoom}
+              className="text-gray-500 text-[10px] uppercase tracking-widest hover:text-white transition-colors"
+            >
+              Napusti sobu
             </button>
           </div>
         )}
