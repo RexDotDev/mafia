@@ -91,7 +91,8 @@ export default async function handler(req: any, res: any) {
     .upsert(updates, { onConflict: 'id' });
 
   if (updatePlayersError) {
-    return toJson(res, 500, { error: 'Failed to assign roles' });
+    console.error('Failed to assign roles', updatePlayersError);
+    return toJson(res, 500, { error: updatePlayersError.message || 'Failed to assign roles' });
   }
 
   const { error: updateRoomError } = await supabaseAdmin
@@ -100,7 +101,8 @@ export default async function handler(req: any, res: any) {
     .eq('id', room.id);
 
   if (updateRoomError) {
-    return toJson(res, 500, { error: 'Failed to update room status' });
+    console.error('Failed to update room status', updateRoomError);
+    return toJson(res, 500, { error: updateRoomError.message || 'Failed to update room status' });
   }
 
   return toJson(res, 200, { data: { ok: true } });
