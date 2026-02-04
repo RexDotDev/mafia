@@ -1,5 +1,5 @@
-import { supabaseAdmin } from '../_shared/supabase';
-import { normalizeRoomCode } from '../_shared/roomUtils';
+import { supabaseAdmin } from '../_shared/supabase.js';
+import { normalizeRoomCode } from '../_shared/roomUtils.js';
 
 const toJson = (res: any, status: number, payload: any) => {
   res.status(status).json(payload);
