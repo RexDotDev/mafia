@@ -1,4 +1,3 @@
-
 export enum Role {
   MAFIA = 'Mafija',
   VILLAGER = 'Građanin',

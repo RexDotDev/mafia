@@ -139,7 +139,7 @@ const App: React.FC = () => {
       await loadRoomById(createdRoomId);
       setPhase(GamePhase.LOBBY);
     } catch (error: any) {
-      setErrorMessage(error?.message || 'NeuspeÅ¡no pridruÅ¾ivanje.');
+      setErrorMessage(error?.message || 'Neuspešno pridruživanje.');
     } finally {
       setIsBusy(false);
     }
@@ -152,7 +152,7 @@ const App: React.FC = () => {
     try {
       await startGame({ roomCode, clientId });
     } catch (error: any) {
-      setErrorMessage(error?.message || 'NeuspeÅ¡an start.');
+      setErrorMessage(error?.message || 'Neuspešan start.');
     } finally {
       setIsBusy(false);
     }
@@ -165,7 +165,7 @@ const App: React.FC = () => {
     try {
       await confirmRole({ roomCode, clientId });
     } catch (error: any) {
-      setErrorMessage(error?.message || 'NeuspeÅ¡na potvrda.');
+      setErrorMessage(error?.message || 'Neuspešna potvrda.');
     } finally {
       setIsBusy(false);
     }
@@ -186,7 +186,7 @@ const App: React.FC = () => {
         },
       });
     } catch (error: any) {
-      setErrorMessage(error?.message || 'NeuspeÅ¡na promena podeÅ¡avanja.');
+      setErrorMessage(error?.message || 'Neuspešna promena podešavanja.');
     } finally {
       setIsBusy(false);
     }
@@ -223,7 +223,7 @@ const App: React.FC = () => {
             />
             <input
               className="w-full bg-[#1a1a1a] border border-[#333] p-4 rounded-2xl outline-none focus:border-red-700 transition-colors uppercase font-mono"
-              placeholder="Å ifra sobe"
+              placeholder="Šifra sobe"
               value={roomCode}
               onChange={(e) => setRoomCode(e.target.value)}
             />
@@ -232,7 +232,7 @@ const App: React.FC = () => {
               disabled={isBusy}
               className="w-full bg-red-700 hover:bg-red-600 disabled:opacity-60 text-white font-bold py-4 rounded-2xl transition-transform active:scale-95 shadow-lg shadow-red-900/20"
             >
-              UÄ‘i u sobu
+              Uđi u sobu
             </button>
           </div>
         )}
@@ -242,7 +242,7 @@ const App: React.FC = () => {
           <div className="space-y-6">
             <div className="flex justify-between items-center border-b border-[#222] pb-2">
               <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest">
-                IgraÄi ({players.length})
+                Igrači ({players.length})
               </h2>
               {me?.isHost && <span className="text-[10px] bg-red-900 text-white px-2 rounded">Ti si Host</span>}
             </div>
@@ -261,7 +261,7 @@ const App: React.FC = () => {
             {me?.isHost ? (
               <div className="space-y-4 pt-4 border-t border-[#222]">
                 <div className="flex justify-between items-center px-2">
-                  <span className="text-xs text-gray-400">Broj MafijaÅ¡a:</span>
+                  <span className="text-xs text-gray-400">Broj Mafijaša:</span>
                   <div className="flex items-center space-x-3">
                     <button
                       onClick={() => handleMafiaCountChange(-1)}
@@ -290,7 +290,7 @@ const App: React.FC = () => {
               </div>
             ) : (
               <p className="text-center text-xs text-gray-500 italic animate-pulse">
-                ÄŒekamo da domaÄ‡in podeli uloge...
+                Čekamo da domaćin podeli uloge...
               </p>
             )}
           </div>
@@ -304,7 +304,7 @@ const App: React.FC = () => {
             <div className="bg-[#1a1a1a] py-12 rounded-3xl border-2 border-red-900/30 shadow-inner relative group cursor-pointer overflow-hidden">
               {/* Overlay da se uloga ne vidi odmah */}
               <div className="absolute inset-0 bg-[#111] border border-[#333] rounded-3xl flex items-center justify-center z-10 group-active:opacity-0 transition-opacity duration-300">
-                <span className="text-red-700 font-black tracking-widest uppercase">DRÅ½I ZA PRIKAZ</span>
+                <span className="text-red-700 font-black tracking-widest uppercase">DRŽI ZA PRIKAZ</span>
               </div>
 
               <div className="flex flex-col items-center">
@@ -334,7 +334,7 @@ const App: React.FC = () => {
               <div className="w-2 h-2 bg-red-700 rounded-full animate-bounce [animation-delay:0.2s]"></div>
               <div className="w-2 h-2 bg-red-700 rounded-full animate-bounce [animation-delay:0.4s]"></div>
             </div>
-            <h2 className="text-xl font-bold uppercase tracking-tighter">ÄŒekamo ostale...</h2>
+            <h2 className="text-xl font-bold uppercase tracking-tighter">Čekamo ostale...</h2>
             <div className="space-y-2">
               {players.map((player) => (
                 <div key={player.id} className="text-[10px] uppercase tracking-widest flex justify-center items-center space-x-2">
@@ -359,7 +359,7 @@ const App: React.FC = () => {
             <div>
               <h2 className="text-3xl font-black uppercase tracking-tighter text-white">Spremni!</h2>
               <p className="text-gray-500 text-sm mt-2 italic">
-                Svi igraÄi su videli svoje uloge. OdloÅ¾ite telefone i zapoÄnite igru uÅ¾ivo.
+                Svi igrači su videli svoje uloge. Odložite telefone i započnite igru uživo.
               </p>
             </div>
             <div className="h-px bg-[#222] w-full"></div>

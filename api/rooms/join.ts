@@ -58,7 +58,7 @@ export default async function handler(req: any, res: any) {
   }
 
   if (room.status !== 'waiting') {
-    return toJson(res, 409, { error: 'Igra je veÄ‡ poÄela!' });
+    return toJson(res, 409, { error: 'Igra je već počela!' });
   }
 
   const { data: existingPlayer, error: existingError } = await supabaseAdmin
