@@ -505,9 +505,17 @@ const App: React.FC = () => {
                 </button>
               </div>
             ) : (
-              <p className="text-center text-xs text-gray-500 italic animate-pulse">
-                Čekamo da domaćin podeli uloge...
-              </p>
+              <div className="text-center space-y-3">
+                <p className="text-xs text-gray-500 italic animate-pulse">
+                  Čekamo da domaćin podeli uloge...
+                </p>
+                <button
+                  onClick={handleLeaveRoom}
+                  className="text-gray-500 text-[10px] uppercase tracking-widest hover:text-white transition-colors"
+                >
+                  Napusti sobu
+                </button>
+              </div>
             )}
           </div>
         )}
