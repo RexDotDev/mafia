@@ -374,7 +374,7 @@ const App: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setRoomCode(generateRoomCode())}
-                    className="px-2 sm:px-3 py-2 rounded-xl bg-[#1a1a1a] border border-[#333] text-[9px] sm:text-[10px] uppercase tracking-widest text-gray-400"
+                    className="h-9 sm:h-10 px-3 sm:px-4 rounded-xl bg-[#1a1a1a] border border-[#333] text-[9px] sm:text-[10px] uppercase tracking-widest text-gray-400 flex items-center justify-center"
                   >
                     Novi kod
                   </button>
