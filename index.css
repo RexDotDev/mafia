@@ -57,6 +57,7 @@ body {
   color: var(--ink);
   font-family: "Space Grotesk", system-ui, -apple-system, Segoe UI, sans-serif;
   transition: background-color 0.25s ease, color 0.25s ease;
+  overflow-x: hidden;
 }
 
 #root {
