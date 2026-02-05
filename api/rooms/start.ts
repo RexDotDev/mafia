@@ -68,7 +68,7 @@ export default async function handler(req: any, res: any) {
     return toJson(res, 400, { error: 'Potrebno je bar 2 igraca.' });
   }
 
-  const narrator = players.find((player) => player.is_host) ?? players[0];
+  const narrator = players[Math.floor(Math.random() * players.length)];
   const participants = players.filter((player) => player.id !== narrator.id);
 
   if (participants.length === 0) {
