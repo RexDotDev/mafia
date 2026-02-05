@@ -60,33 +60,41 @@ export default async function handler(req: any, res: any) {
 
   const { data: players, error: playersError } = await supabaseAdmin
     .from('players')
-    .select('id')
+    .select('id, is_host, created_at')
     .eq('room_id', room.id)
     .order('created_at', { ascending: true });
 
-  if (playersError || !players || players.length === 0) {
-    return toJson(res, 400, { error: 'No players in room' });
+  if (playersError || !players || players.length < 2) {
+    return toJson(res, 400, { error: 'Potrebno je bar 2 igraca.' });
+  }
+
+  const narrator = players.find((player) => player.is_host) ?? players[0];
+  const participants = players.filter((player) => player.id !== narrator.id);
+
+  if (participants.length === 0) {
+    return toJson(res, 400, { error: 'Potrebno je bar 2 igraca.' });
   }
 
   const settings = sanitizeSettings(room.settings);
   const extraRoles = (settings.doctor ? 1 : 0) + (settings.detective ? 1 : 0);
-  const maxMafia = Math.max(1, players.length - extraRoles);
+  const maxMafia = Math.max(1, participants.length - extraRoles);
   const mafiaCount = Math.min(Math.max(settings.mafiaCount, 1), maxMafia);
 
   const roles: string[] = [];
   for (let i = 0; i < mafiaCount; i += 1) roles.push(Role.MAFIA);
   if (settings.doctor) roles.push(Role.DOCTOR);
   if (settings.detective) roles.push(Role.DETECTIVE);
-  while (roles.length < players.length) roles.push(Role.VILLAGER);
+  while (roles.length < participants.length) roles.push(Role.VILLAGER);
 
   const shuffledRoles = shuffle(roles);
-  for (let index = 0; index < players.length; index += 1) {
-    const player = players[index];
+  for (let index = 0; index < participants.length; index += 1) {
+    const player = participants[index];
     const { error: updateError } = await supabaseAdmin
       .from('players')
       .update({
         role: shuffledRoles[index],
         has_confirmed: false,
+        is_narrator: false,
       })
       .eq('id', player.id);
 
@@ -94,6 +102,19 @@ export default async function handler(req: any, res: any) {
       console.error('Failed to assign roles', updateError);
       return toJson(res, 500, { error: updateError.message || 'Failed to assign roles' });
     }
+  }
+
+  const { error: narratorError } = await supabaseAdmin
+    .from('players')
+    .update({
+      role: Role.NARRATOR,
+      has_confirmed: true,
+      is_narrator: true,
+    })
+    .eq('id', narrator.id);
+
+  if (narratorError) {
+    return toJson(res, 500, { error: 'Failed to assign narrator' });
   }
 
   const { error: updateRoomError } = await supabaseAdmin

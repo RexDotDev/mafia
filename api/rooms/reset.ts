@@ -46,7 +46,7 @@ export default async function handler(req: any, res: any) {
 
   const { error: resetPlayersError } = await supabaseAdmin
     .from('players')
-    .update({ role: null, has_confirmed: false })
+    .update({ role: null, has_confirmed: false, is_narrator: false })
     .eq('room_id', room.id);
 
   if (resetPlayersError) {

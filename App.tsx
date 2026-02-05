@@ -70,7 +70,7 @@ const App: React.FC = () => {
 
     const { data: playerRows, error: playerError } = await supabase
       .from('players')
-      .select('id, client_id, name, role, has_confirmed, is_host')
+      .select('id, client_id, name, role, has_confirmed, is_host, is_narrator')
       .eq('room_id', id)
       .order('created_at', { ascending: true });
 
@@ -86,6 +86,7 @@ const App: React.FC = () => {
       role: player.role || undefined,
       hasConfirmed: !!player.has_confirmed,
       isHost: !!player.is_host,
+      isNarrator: !!player.is_narrator,
     }));
 
     setRoom({
@@ -149,6 +150,11 @@ const App: React.FC = () => {
   const me = useMemo(
     () => room?.players.find((player) => player.clientId === clientId),
     [room, clientId],
+  );
+
+  const narrator = useMemo(
+    () => room?.players.find((player) => player.isNarrator),
+    [room],
   );
 
   useEffect(() => {
@@ -249,6 +255,7 @@ const App: React.FC = () => {
   const players = room?.players ?? [];
   const settings = room?.settings ?? DEFAULT_SETTINGS;
 
+
   const handleModeChange = (mode: EntryMode) => {
     setEntryMode(mode);
     setErrorMessage('');
@@ -340,6 +347,59 @@ const App: React.FC = () => {
       console.error('Failed to leave room', error);
     }
   };
+
+  const narratorPanel = (
+    <div className="text-center space-y-5 sm:space-y-6 py-2">
+      <div>
+        <h2 className="title-font text-3xl text-[color:var(--ink)]">Narator</h2>
+        <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
+          Ti vodis igru. Imas pregled svih uloga i ne ucestvujes u glasanjima.
+        </p>
+      </div>
+      <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-3">
+        <p className="text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-faint)]">Uloge igraca</p>
+        {players
+          .filter((player) => !player.isNarrator)
+          .map((player) => (
+            <div
+              key={player.id}
+              className="flex items-center justify-between rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2"
+            >
+              <span className="text-sm font-medium text-[color:var(--ink)]">{player.name}</span>
+              <span className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--ink-muted)]">
+                {player.role || 'Uloga'}
+              </span>
+            </div>
+          ))}
+      </div>
+      <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2">
+        <p className="text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-faint)]">Potvrde uloga</p>
+        {players
+          .filter((player) => !player.isNarrator)
+          .map((player) => (
+            <div
+              key={player.id}
+              className="text-[10px] uppercase tracking-[0.35em] flex justify-between items-center"
+            >
+              <span className={player.hasConfirmed ? 'text-emerald-600' : 'text-[color:var(--ink-soft)]'}>
+                {player.name}
+              </span>
+              {player.hasConfirmed ? (
+                <i className="fas fa-check text-[10px]"></i>
+              ) : (
+                <i className="fas fa-clock text-[10px] text-[color:var(--ink-soft)]"></i>
+              )}
+            </div>
+          ))}
+      </div>
+      <button
+        onClick={handleLeaveRoom}
+        className="w-full rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] py-3 text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] transition"
+      >
+        Napusti sobu
+      </button>
+    </div>
+  );
 
   useEffect(() => {
     if (hasRestoredSession) return;
@@ -453,6 +513,13 @@ const App: React.FC = () => {
                   {errorMessage && (
                     <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
                       {errorMessage}
+                    </div>
+                  )}
+
+                  {room?.status !== 'waiting' && narrator && (
+                    <div className="mb-5 rounded-2xl border border-[color:var(--line)] bg-[var(--surface-soft)] px-4 py-3 text-xs text-[color:var(--ink-muted)]">
+                      <span className="text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-faint)]">Narator</span>
+                      <div className="mt-2 text-sm font-semibold text-[color:var(--ink)]">{narrator.name}</div>
                     </div>
                   )}
 
@@ -640,11 +707,13 @@ const App: React.FC = () => {
                     </div>
                   )}
 
-                  {phase === GamePhase.REVEAL && (
+                  {phase === GamePhase.REVEAL && (me?.isNarrator ? (
+                    narratorPanel
+                  ) : (
                     <div className="text-center space-y-6 sm:space-y-8">
                       <p className="text-sm text-[color:var(--ink-muted)] italic">Tvoja tajna uloga je...</p>
 
-                      <div className="relative overflow-hidden rounded-[28px] border border-[color:var(--line)] bg-[var(--surface-strong)] px-6 py-10 sm:py-12 group">
+                      <div className="relative overflow-hidden rounded-[28px] border border-[color:var(--line)] bg-[var(--surface-strong)] px-6 py-10 sm:py-12 group no-select">
                         <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--surface-strong)] transition-opacity duration-300 group-active:opacity-0">
                           <span className="title-font text-base uppercase tracking-[0.4em] text-[color:var(--ink-muted)] select-none">
                             Drzi za prikaz
@@ -668,9 +737,11 @@ const App: React.FC = () => {
                         Video sam ulogu
                       </button>
                     </div>
-                  )}
+                  ))}
 
-                  {phase === GamePhase.WAITING_FOR_OTHERS && (
+                  {phase === GamePhase.WAITING_FOR_OTHERS && (me?.isNarrator ? (
+                    narratorPanel
+                  ) : (
                     <div className="text-center space-y-5 sm:space-y-6 py-4 sm:py-6">
                       <div className="flex justify-center space-x-2">
                         <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-bounce"></div>
@@ -702,7 +773,7 @@ const App: React.FC = () => {
                         Napusti sobu
                       </button>
                     </div>
-                  )}
+                  ))}
 
                   {phase === GamePhase.READY_TO_PLAY && (
                     <div className="text-center space-y-5 sm:space-y-6 py-4">

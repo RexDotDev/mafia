@@ -2,7 +2,8 @@ export enum Role {
   MAFIA = 'Mafija',
   VILLAGER = 'Građanin',
   DOCTOR = 'Doktor',
-  DETECTIVE = 'Inspektor'
+  DETECTIVE = 'Inspektor',
+  NARRATOR = 'Narator'
 }
 
 export enum GamePhase {
@@ -20,6 +21,7 @@ export interface Player {
   role?: Role;
   hasConfirmed: boolean;
   isHost: boolean;
+  isNarrator: boolean;
 }
 
 export interface RoomSettings {

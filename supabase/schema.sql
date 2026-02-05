@@ -17,11 +17,13 @@ create table if not exists public.players (
   role text,
   has_confirmed boolean not null default false,
   is_host boolean not null default false,
+  is_narrator boolean not null default false,
   created_at timestamptz not null default now(),
   last_seen timestamptz not null default now()
 );
 
 alter table public.players add column if not exists last_seen timestamptz not null default now();
+alter table public.players add column if not exists is_narrator boolean not null default false;
 
 create unique index if not exists players_room_client_unique on public.players(room_id, client_id);
 create index if not exists players_room_last_seen_idx on public.players(room_id, last_seen);

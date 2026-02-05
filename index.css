@@ -107,3 +107,10 @@ body {
   font-family: "Unbounded", "Space Grotesk", sans-serif;
   letter-spacing: -0.04em;
 }
+
+.no-select {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
