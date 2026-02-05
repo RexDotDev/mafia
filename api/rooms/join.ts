@@ -53,6 +53,7 @@ export default async function handler(req: any, res: any) {
       client_id: clientId,
       has_confirmed: false,
       is_host: true,
+      last_seen: new Date().toISOString(),
     });
 
     if (createPlayerError) {
@@ -76,7 +77,7 @@ export default async function handler(req: any, res: any) {
   if (existingPlayer) {
     const { error: updatePlayerError } = await supabaseAdmin
       .from('players')
-      .update({ name: playerName })
+      .update({ name: playerName, last_seen: new Date().toISOString() })
       .eq('id', existingPlayer.id);
 
     if (updatePlayerError) {
@@ -97,6 +98,7 @@ export default async function handler(req: any, res: any) {
       client_id: clientId,
       has_confirmed: false,
       is_host: false,
+      last_seen: new Date().toISOString(),
     });
 
     if (createPlayerError) {

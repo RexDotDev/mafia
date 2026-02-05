@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { GamePhase, Role, RoomData, RoomSettings } from './types';
 import { ROLE_ICONS, ROLE_DESCRIPTIONS } from './constants';
 import { supabase } from './services/supabaseClient';
-import { confirmRole, joinRoom, leaveRoom, resetGame, startGame, updateSettings } from './services/roomApi';
+import { confirmRole, joinRoom, leaveRoom, pingRoom, resetGame, startGame, updateSettings } from './services/roomApi';
 
 const DEFAULT_SETTINGS: RoomSettings = {
   mafiaCount: 1,
@@ -125,6 +125,26 @@ const App: React.FC = () => {
       supabase.removeChannel(channel);
     };
   }, [roomId, loadRoomById]);
+
+  useEffect(() => {
+    if (!roomId || !roomCode) return;
+    let active = true;
+    const sendPing = async () => {
+      if (!active) return;
+      try {
+        await pingRoom({ roomCode, clientId });
+      } catch (error) {
+        console.warn('Heartbeat failed', error);
+      }
+    };
+
+    sendPing();
+    const interval = setInterval(sendPing, 45000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [roomId, roomCode, clientId]);
 
   const me = useMemo(
     () => room?.players.find((player) => player.clientId === clientId),

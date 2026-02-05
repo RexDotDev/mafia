@@ -61,3 +61,10 @@ export async function leaveRoom(payload: {
 }): Promise<{ ok: true }> {
   return postJson<{ ok: true }>('/api/rooms/leave', payload);
 }
+
+export async function pingRoom(payload: {
+  roomCode: string;
+  clientId: string;
+}): Promise<{ ok: true }> {
+  return postJson<{ ok: true }>('/api/rooms/ping', payload);
+}
