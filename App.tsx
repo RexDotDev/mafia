@@ -364,18 +364,32 @@ const App: React.FC = () => {
         {players
           .filter((player) => !player.isNarrator)
           .map((player) => (
+            (() => {
+              const role = player.role || Role.VILLAGER;
+              const roleTone =
+                role === Role.MAFIA
+                  ? 'border-red-300 bg-red-50/70 text-red-700'
+                  : role === Role.DOCTOR
+                    ? 'border-emerald-300 bg-emerald-50/70 text-emerald-700'
+                    : role === Role.DETECTIVE
+                      ? 'border-amber-300 bg-amber-50/70 text-amber-700'
+                      : 'border-[color:var(--line)] bg-[var(--surface-strong)] text-[color:var(--ink-muted)]';
+
+              return (
             <div
               key={player.id}
-              className="flex items-center justify-between rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2"
+              className={`flex items-center justify-between rounded-xl border px-3 py-2 ${roleTone}`}
             >
               <span className="text-sm font-medium text-[color:var(--ink)]">{player.name}</span>
-              <span className="flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-[color:var(--ink-muted)]">
+              <span className="flex items-center gap-2 text-[10px] uppercase tracking-[0.3em]">
                 <span className="text-base leading-none text-[color:var(--ink)]">
                   {ROLE_ICONS[player.role || Role.VILLAGER]}
                 </span>
                 <span>{player.role || 'Uloga'}</span>
               </span>
             </div>
+              );
+            })()
           ))}
       </div>
       <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2">
