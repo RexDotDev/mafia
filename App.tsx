@@ -401,7 +401,7 @@ const App: React.FC = () => {
               key={player.id}
               className="text-[10px] uppercase tracking-[0.35em] flex justify-between items-center"
             >
-              <span className={player.hasConfirmed ? 'text-emerald-600' : 'text-[color:var(--ink-soft)]'}>
+              <span className={`font-semibold ${player.hasConfirmed ? 'text-emerald-600' : 'text-[color:var(--ink-soft)]'}`}>
                 {player.name}
               </span>
               {player.hasConfirmed ? (
@@ -423,7 +423,7 @@ const App: React.FC = () => {
       )}
       <button
         onClick={handleLeaveRoom}
-        className="w-full rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] py-3 text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] transition"
+        className="w-full rounded-2xl border border-red-500/40 bg-red-600 py-3 text-[10px] font-semibold uppercase tracking-[0.35em] text-white hover:bg-red-500 transition"
       >
         Napusti sobu
       </button>
@@ -505,7 +505,7 @@ const App: React.FC = () => {
                     <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-4">
                       <p className="text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-faint)]">Sifra sobe</p>
                       <div className="mt-3 flex items-center justify-between gap-3">
-                        <span className="font-mono text-xl tracking-[0.35em] text-[color:var(--ink)]">{roomCode.toUpperCase()}</span>
+                        <span className="font-mono text-xl font-semibold tracking-[0.35em] text-[color:var(--ink)]">{roomCode.toUpperCase()}</span>
                         <button
                           type="button"
                           onClick={handleCopyCode}
@@ -678,7 +678,7 @@ const App: React.FC = () => {
                             key={player.id}
                             className="flex items-center justify-between rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] px-4 py-3"
                           >
-                            <span className="text-sm font-medium text-[color:var(--ink)]">
+                            <span className="text-sm font-semibold text-[color:var(--ink)]">
                               {player.name} {player.clientId === clientId && '(Ti)'}
                             </span>
                             <i className="fas fa-check-circle text-emerald-600 text-xs"></i>
@@ -717,7 +717,7 @@ const App: React.FC = () => {
                           </button>
                           <button
                             onClick={handleLeaveRoom}
-                            className="w-full rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] py-3 text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] transition"
+                            className="w-full rounded-2xl border border-red-500/40 bg-red-600 py-3 text-[10px] font-semibold uppercase tracking-[0.35em] text-white hover:bg-red-500 transition"
                           >
                             Napusti sobu
                           </button>
@@ -727,7 +727,7 @@ const App: React.FC = () => {
                           <p className="text-xs text-[color:var(--ink-muted)] italic">Cekamo da domacin podeli uloge...</p>
                           <button
                             onClick={handleLeaveRoom}
-                            className="w-full rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] py-3 text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] transition"
+                            className="w-full rounded-2xl border border-red-500/40 bg-red-600 py-3 text-[10px] font-semibold uppercase tracking-[0.35em] text-white hover:bg-red-500 transition"
                           >
                             Napusti sobu
                           </button>
@@ -784,7 +784,7 @@ const App: React.FC = () => {
                             key={player.id}
                             className="text-[10px] uppercase tracking-[0.35em] flex justify-between items-center"
                           >
-                            <span className={player.hasConfirmed ? 'text-emerald-600' : 'text-[color:var(--ink-soft)]'}>
+                            <span className={`font-semibold ${player.hasConfirmed ? 'text-emerald-600' : 'text-[color:var(--ink-soft)]'}`}>
                               {player.name}
                             </span>
                             {player.hasConfirmed ? (
@@ -797,7 +797,7 @@ const App: React.FC = () => {
                       </div>
                       <button
                         onClick={handleLeaveRoom}
-                        className="w-full rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] py-3 text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] transition"
+                        className="w-full rounded-2xl border border-red-500/40 bg-red-600 py-3 text-[10px] font-semibold uppercase tracking-[0.35em] text-white hover:bg-red-500 transition"
                       >
                         Napusti sobu
                       </button>
@@ -827,7 +827,7 @@ const App: React.FC = () => {
                         )}
                         <button
                           onClick={handleLeaveRoom}
-                          className="w-full rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] py-3 text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] transition"
+                          className="w-full rounded-2xl border border-red-500/40 bg-red-600 py-3 text-[10px] font-semibold uppercase tracking-[0.35em] text-white hover:bg-red-500 transition"
                         >
                           Napusti sobu
                         </button>
