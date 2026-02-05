@@ -369,8 +369,11 @@ const App: React.FC = () => {
               className="flex items-center justify-between rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2"
             >
               <span className="text-sm font-medium text-[color:var(--ink)]">{player.name}</span>
-              <span className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--ink-muted)]">
-                {player.role || 'Uloga'}
+              <span className="flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-[color:var(--ink-muted)]">
+                <span className="text-base leading-none text-[color:var(--ink)]">
+                  {ROLE_ICONS[player.role || Role.VILLAGER]}
+                </span>
+                <span>{player.role || 'Uloga'}</span>
               </span>
             </div>
           ))}
