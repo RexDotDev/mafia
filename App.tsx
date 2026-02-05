@@ -355,6 +355,9 @@ const App: React.FC = () => {
         <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
           Ti vodis igru. Imas pregled svih uloga i ne ucestvujes u glasanjima.
         </p>
+        {room?.status === 'finished' && (
+          <p className="mt-2 text-xs uppercase tracking-[0.3em] text-emerald-600">Svi su videli uloge</p>
+        )}
       </div>
       <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-3">
         <p className="text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-faint)]">Uloge igraca</p>
@@ -392,6 +395,15 @@ const App: React.FC = () => {
             </div>
           ))}
       </div>
+      {me?.isHost && (
+        <button
+          onClick={handleResetGame}
+          disabled={isBusy}
+          className="w-full rounded-2xl bg-[var(--ink)] py-3 text-[11px] font-semibold uppercase tracking-[0.35em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
+        >
+          Nova podela uloga
+        </button>
+      )}
       <button
         onClick={handleLeaveRoom}
         className="w-full rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] py-3 text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] transition"
@@ -775,7 +787,9 @@ const App: React.FC = () => {
                     </div>
                   ))}
 
-                  {phase === GamePhase.READY_TO_PLAY && (
+                  {phase === GamePhase.READY_TO_PLAY && (me?.isNarrator ? (
+                    narratorPanel
+                  ) : (
                     <div className="text-center space-y-5 sm:space-y-6 py-4">
                       <div>
                         <h2 className="title-font text-3xl text-[color:var(--ink)]">Spremni!</h2>
@@ -802,7 +816,7 @@ const App: React.FC = () => {
                         </button>
                       </div>
                     </div>
-                  )}
+                  ))}
                 </main>
               </div>
             </div>
