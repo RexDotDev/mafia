@@ -54,3 +54,10 @@ export async function resetGame(payload: {
 }): Promise<{ ok: true }> {
   return postJson<{ ok: true }>('/api/rooms/reset', payload);
 }
+
+export async function leaveRoom(payload: {
+  roomCode: string;
+  clientId: string;
+}): Promise<{ ok: true }> {
+  return postJson<{ ok: true }>('/api/rooms/leave', payload);
+}

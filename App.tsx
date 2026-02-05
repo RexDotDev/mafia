@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { GamePhase, Role, RoomData, RoomSettings } from './types';
 import { ROLE_ICONS, ROLE_DESCRIPTIONS } from './constants';
 import { supabase } from './services/supabaseClient';
-import { confirmRole, joinRoom, resetGame, startGame, updateSettings } from './services/roomApi';
+import { confirmRole, joinRoom, leaveRoom, resetGame, startGame, updateSettings } from './services/roomApi';
 
 const DEFAULT_SETTINGS: RoomSettings = {
   mafiaCount: 1,
@@ -304,13 +304,21 @@ const App: React.FC = () => {
     }
   };
 
-  const handleLeaveRoom = () => {
+  const handleLeaveRoom = async () => {
+    const code = roomCode;
     localStorage.removeItem(SESSION_KEY);
     setRoom(null);
     setRoomId(null);
     setRoomCode(generateRoomCode());
     setPhase(GamePhase.JOIN);
     setEntryMode('create');
+
+    if (!code) return;
+    try {
+      await leaveRoom({ roomCode: code, clientId });
+    } catch (error) {
+      console.error('Failed to leave room', error);
+    }
   };
 
   useEffect(() => {
