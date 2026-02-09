@@ -56,7 +56,7 @@ body {
   min-height: 100vh;
   background: var(--paper);
   color: var(--ink);
-  font-family: "Space Grotesk", system-ui, -apple-system, Segoe UI, sans-serif;
+  font-family: "Sora", system-ui, -apple-system, Segoe UI, sans-serif;
   transition: background-color 0.25s ease, color 0.25s ease;
   overflow-x: hidden;
 }
@@ -104,8 +104,8 @@ body {
 }
 
 .title-font {
-  font-family: "Unbounded", "Space Grotesk", sans-serif;
-  letter-spacing: -0.04em;
+  font-family: "Bebas Neue", "Sora", sans-serif;
+  letter-spacing: 0.02em;
 }
 
 .no-select {

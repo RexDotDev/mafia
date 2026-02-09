@@ -620,14 +620,17 @@ const App: React.FC = () => {
         {themeToggleFloating}
         <div className="app-shell flex min-h-screen items-center justify-center px-4 py-6 sm:px-5 sm:py-12">
           <div className="w-full max-w-md rounded-[28px] border border-[color:var(--line)] bg-[var(--surface)] px-6 py-8 sm:px-8 sm:py-10 relative">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.4em] text-[color:var(--ink-faint)]">Priprema</p>
-                <h1 className="title-font text-3xl text-[color:var(--ink)]">MAFIJA</h1>
-                <p className="mt-2 text-xs text-[color:var(--ink-muted)]">Podesavamo sobu i konekciju.</p>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.4em] text-[color:var(--ink-faint)]">Priprema</p>
+                  <div className="flex items-center gap-2">
+                    <img src="/favicon.png" alt="Mafija" className="h-7 w-7 rounded-md" />
+                    <h1 className="title-font text-3xl text-[color:var(--ink)]">MAFIJA</h1>
+                  </div>
+                  <p className="mt-2 text-xs text-[color:var(--ink-muted)]">Podesavamo sobu i konekciju.</p>
+                </div>
+                {themeToggleInline}
               </div>
-              {themeToggleInline}
-            </div>
             <div className="mt-6 sm:mt-8 rounded-2xl border border-[color:var(--line)] bg-[var(--surface-soft)] p-4">
               <div className="flex justify-center space-x-2">
                 <div className="h-2.5 w-2.5 rounded-full bg-red-500 animate-bounce"></div>
@@ -648,14 +651,17 @@ const App: React.FC = () => {
       <div className="app-shell flex min-h-screen flex-col items-center justify-center px-4 py-6 sm:px-5 sm:py-12">
         <div className="w-full max-w-5xl">
           <div className="relative">
-            <div className="absolute -inset-1 rounded-[36px] bg-gradient-to-br from-red-600/25 via-amber-400/25 to-transparent blur-2xl"></div>
+            <div className="absolute -inset-1 rounded-[36px] bg-gradient-to-br from-red-500/50 via-red-400/25 to-transparent blur-2xl"></div>
             <div className="relative overflow-hidden rounded-[32px] border border-[color:var(--line)] bg-[var(--surface)]">
               <div className="grid md:grid-cols-[280px,1fr]">
                 <aside className="flex flex-col gap-4 sm:gap-6 bg-[var(--surface-soft)] p-5 sm:p-6 md:p-8 border-b md:border-b-0 md:border-r border-[color:var(--line)]">
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="text-[11px] uppercase tracking-[0.4em] text-[color:var(--ink-faint)]">Nocna igra</p>
-                      <h1 className="title-font text-4xl md:text-5xl text-[color:var(--ink)]">MAFIJA</h1>
+                      <div className="flex items-center gap-3">
+                        <img src="/favicon.png" alt="Mafija" className="h-8 w-8 md:h-9 md:w-9 rounded-md" />
+                        <h1 className="title-font text-4xl md:text-5xl text-[color:var(--ink)]">MAFIJA</h1>
+                      </div>
                       <p className="mt-2 text-sm text-[color:var(--ink-muted)]">Diskretan diler uloga za igru uzivo.</p>
                     </div>
                     {themeToggleInline}
