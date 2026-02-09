@@ -190,7 +190,12 @@ const App: React.FC = () => {
     }
   }, [room, me?.hasConfirmed]);
 
-  const joinWithPayload = async (code: string, name: string, settings?: RoomSettings) => {
+  const joinWithPayload = async (
+    code: string,
+    name: string,
+    settings?: RoomSettings,
+    options?: { silent?: boolean },
+  ) => {
     setErrorMessage('');
     setIsBusy(true);
     try {
@@ -206,7 +211,10 @@ const App: React.FC = () => {
       await loadRoomById(createdRoomId);
       setPhase(GamePhase.LOBBY);
     } catch (error: any) {
-      setErrorMessage(error?.message || 'Neuspešno pridruživanje.');
+      if (options?.silent) {
+        throw error;
+      }
+      setErrorMessage(error?.message || 'NeuspeÅ¡no pridruÅ¾ivanje.');
     } finally {
       setIsBusy(false);
     }
@@ -603,7 +611,7 @@ const App: React.FC = () => {
         setEntryMode('join');
         setPlayerName(parsed.playerName);
         setRoomCode(parsed.roomCode);
-        joinWithPayload(parsed.roomCode, parsed.playerName)
+        joinWithPayload(parsed.roomCode, parsed.playerName, undefined, { silent: true })
           .catch(() => {
             localStorage.removeItem(SESSION_KEY);
             setRoom(null);
@@ -1202,3 +1210,6 @@ const App: React.FC = () => {
 };
 
 export default App;
+
+
+
