@@ -603,9 +603,18 @@ const App: React.FC = () => {
         setEntryMode('join');
         setPlayerName(parsed.playerName);
         setRoomCode(parsed.roomCode);
-        joinWithPayload(parsed.roomCode, parsed.playerName).finally(() => {
-          setHasRestoredSession(true);
-        });
+        joinWithPayload(parsed.roomCode, parsed.playerName)
+          .catch(() => {
+            localStorage.removeItem(SESSION_KEY);
+            setRoom(null);
+            setRoomId(null);
+            setRoomCode(generateRoomCode());
+            setEntryMode('create');
+            setErrorMessage('');
+          })
+          .finally(() => {
+            setHasRestoredSession(true);
+          });
         return;
       }
     } catch {
