@@ -806,8 +806,6 @@ const App: React.FC = () => {
                             </div>
                           </div>
                           <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-3 space-y-3">
-                            <p className="text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-faint)]">Obavezne uloge</p>
-                            <p className="text-xs text-[color:var(--ink-muted)]">Doktor i Inspektor su uvek u igri.</p>
                             <div className="flex items-center justify-between">
                               <span className="text-sm text-[color:var(--ink-muted)]">Dama</span>
                               <button
@@ -965,8 +963,6 @@ const App: React.FC = () => {
                             </div>
                           </div>
                           <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface)] p-3 space-y-3">
-                            <p className="text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-faint)]">Obavezne uloge</p>
-                            <p className="text-xs text-[color:var(--ink-muted)]">Doktor i Inspektor su uvek u igri.</p>
                             <div className="flex items-center justify-between">
                               <span className="text-sm text-[color:var(--ink-muted)]">Dama</span>
                               <button
