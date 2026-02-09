@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { GamePhase, Role, RoomData, RoomSettings } from './types';
-import { ROLE_ICONS, ROLE_DESCRIPTIONS } from './constants';
+import { CustomRoleSetting, GamePhase, Role, RoomData, RoomSettings } from './types';
+import { getRoleDescription, getRoleIcon } from './constants';
 import { supabase } from './services/supabaseClient';
 import { confirmRole, joinRoom, leaveRoom, pingRoom, resetGame, startGame, updateSettings } from './services/roomApi';
 
@@ -8,13 +8,27 @@ const DEFAULT_SETTINGS: RoomSettings = {
   mafiaCount: 1,
   doctor: true,
   detective: true,
+  lady: false,
+  customRoles: [],
 };
 
-const normalizeSettings = (raw: any): RoomSettings => ({
-  mafiaCount: typeof raw?.mafiaCount === 'number' ? raw.mafiaCount : 1,
-  doctor: typeof raw?.doctor === 'boolean' ? raw.doctor : true,
-  detective: typeof raw?.detective === 'boolean' ? raw.detective : true,
-});
+const normalizeSettings = (raw: any): RoomSettings => {
+  const rawCustomRoles = Array.isArray(raw?.customRoles) ? raw.customRoles : [];
+  const customRoles = rawCustomRoles
+    .map((role: any) => ({
+      name: typeof role?.name === 'string' ? role.name.trim() : '',
+      count: typeof role?.count === 'number' ? Math.max(1, Math.min(10, role.count)) : 1,
+    }))
+    .filter((role: any) => role.name);
+
+  return {
+    mafiaCount: typeof raw?.mafiaCount === 'number' ? raw.mafiaCount : 1,
+    doctor: true,
+    detective: true,
+    lady: typeof raw?.lady === 'boolean' ? raw.lady : false,
+    customRoles,
+  };
+};
 
 type EntryMode = 'join' | 'create';
 type ThemeMode = 'light' | 'dark';
@@ -33,6 +47,10 @@ const App: React.FC = () => {
   const [isBusy, setIsBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [draftSettings, setDraftSettings] = useState<RoomSettings>(DEFAULT_SETTINGS);
+  const [draftCustomRoleName, setDraftCustomRoleName] = useState('');
+  const [draftCustomRoleCount, setDraftCustomRoleCount] = useState(1);
+  const [customRoleName, setCustomRoleName] = useState('');
+  const [customRoleCount, setCustomRoleCount] = useState(1);
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
   const [hasRestoredSession, setHasRestoredSession] = useState(false);
   const [theme, setTheme] = useState<ThemeMode>(() => {
@@ -252,6 +270,97 @@ const App: React.FC = () => {
     }
   };
 
+  const handleLadyToggle = async () => {
+    if (!roomCode || !room) return;
+    const next = !settings.lady;
+    setErrorMessage('');
+    setIsBusy(true);
+    try {
+      await updateSettings({
+        roomCode,
+        clientId,
+        settings: {
+          ...settings,
+          lady: next,
+        },
+      });
+    } catch (error: any) {
+      setErrorMessage(error?.message || 'NeuspeÅ¡na promena podeÅ¡avanja.');
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const handleAddCustomRole = async () => {
+    if (!roomCode || !room) return;
+    const trimmed = customRoleName.trim();
+    if (!trimmed) return;
+    const nextRoles = mergeCustomRole(settings.customRoles, trimmed, clampCustomRoleCount(customRoleCount));
+    setErrorMessage('');
+    setIsBusy(true);
+    try {
+      await updateSettings({
+        roomCode,
+        clientId,
+        settings: {
+          ...settings,
+          customRoles: nextRoles,
+        },
+      });
+      setCustomRoleName('');
+      setCustomRoleCount(1);
+    } catch (error: any) {
+      setErrorMessage(error?.message || 'NeuspeÅ¡na promena podeÅ¡avanja.');
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const handleCustomRoleCountChange = async (index: number, delta: number) => {
+    if (!roomCode || !room) return;
+    if (!settings.customRoles[index]) return;
+    const nextRoles = settings.customRoles.map((role, roleIndex) =>
+      roleIndex === index ? { ...role, count: clampCustomRoleCount(role.count + delta) } : role,
+    );
+    setErrorMessage('');
+    setIsBusy(true);
+    try {
+      await updateSettings({
+        roomCode,
+        clientId,
+        settings: {
+          ...settings,
+          customRoles: nextRoles,
+        },
+      });
+    } catch (error: any) {
+      setErrorMessage(error?.message || 'NeuspeÅ¡na promena podeÅ¡avanja.');
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const handleRemoveCustomRole = async (index: number) => {
+    if (!roomCode || !room) return;
+    const nextRoles = settings.customRoles.filter((_, roleIndex) => roleIndex !== index);
+    setErrorMessage('');
+    setIsBusy(true);
+    try {
+      await updateSettings({
+        roomCode,
+        clientId,
+        settings: {
+          ...settings,
+          customRoles: nextRoles,
+        },
+      });
+    } catch (error: any) {
+      setErrorMessage(error?.message || 'NeuspeÅ¡na promena podeÅ¡avanja.');
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
   const players = room?.players ?? [];
   const settings = room?.settings ?? DEFAULT_SETTINGS;
 
@@ -262,6 +371,8 @@ const App: React.FC = () => {
     if (mode === 'create') {
       setRoomCode(generateRoomCode());
       setDraftSettings(DEFAULT_SETTINGS);
+      setDraftCustomRoleName('');
+      setDraftCustomRoleCount(1);
     } else {
       setRoomCode('');
     }
@@ -281,6 +392,19 @@ const App: React.FC = () => {
 
   const handleThemeToggle = () => {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  };
+
+  const clampCustomRoleCount = (value: number) => Math.max(1, Math.min(10, value));
+
+  const mergeCustomRole = (roles: CustomRoleSetting[], name: string, count: number) => {
+    const trimmed = name.trim();
+    if (!trimmed) return roles;
+    const normalized = trimmed.toLowerCase();
+    const existingIndex = roles.findIndex((role) => role.name.toLowerCase() === normalized);
+    if (existingIndex < 0) return [...roles, { name: trimmed, count }];
+    return roles.map((role, index) =>
+      index === existingIndex ? { ...role, count: clampCustomRoleCount(role.count + count) } : role,
+    );
   };
 
   const themeToggleFloating = (
@@ -314,8 +438,37 @@ const App: React.FC = () => {
     }));
   };
 
-  const toggleDraftSetting = (key: 'doctor' | 'detective') => {
-    setDraftSettings((prev) => ({ ...prev, [key]: !prev[key] }));
+  const toggleDraftLady = () => {
+    setDraftSettings((prev) => ({ ...prev, lady: !prev.lady }));
+  };
+
+  const handleAddDraftCustomRole = () => {
+    const trimmed = draftCustomRoleName.trim();
+    if (!trimmed) return;
+    setDraftSettings((prev) => ({
+      ...prev,
+      customRoles: mergeCustomRole(prev.customRoles, trimmed, clampCustomRoleCount(draftCustomRoleCount)),
+    }));
+    setDraftCustomRoleName('');
+    setDraftCustomRoleCount(1);
+  };
+
+  const handleDraftCustomRoleCountChange = (index: number, delta: number) => {
+    setDraftSettings((prev) => ({
+      ...prev,
+      customRoles: prev.customRoles.map((role, roleIndex) =>
+        roleIndex === index
+          ? { ...role, count: clampCustomRoleCount(role.count + delta) }
+          : role,
+      ),
+    }));
+  };
+
+  const handleRemoveDraftCustomRole = (index: number) => {
+    setDraftSettings((prev) => ({
+      ...prev,
+      customRoles: prev.customRoles.filter((_, roleIndex) => roleIndex !== index),
+    }));
   };
 
   const handleResetGame = async () => {
@@ -339,6 +492,11 @@ const App: React.FC = () => {
     setRoomCode(generateRoomCode());
     setPhase(GamePhase.JOIN);
     setEntryMode('create');
+    setDraftSettings(DEFAULT_SETTINGS);
+    setDraftCustomRoleName('');
+    setDraftCustomRoleCount(1);
+    setCustomRoleName('');
+    setCustomRoleCount(1);
 
     if (!code) return;
     try {
@@ -373,7 +531,9 @@ const App: React.FC = () => {
                     ? 'text-emerald-600'
                     : role === Role.DETECTIVE
                       ? 'text-amber-600'
-                      : 'text-[color:var(--ink)]';
+                      : role === Role.LADY
+                        ? 'text-red-500'
+                        : 'text-[color:var(--ink)]';
 
               return (
             <div
@@ -383,7 +543,7 @@ const App: React.FC = () => {
               <span className={`text-sm font-bold ${nameTone}`}>{player.name}</span>
               <span className="flex items-center gap-2 text-[10px] uppercase tracking-[0.3em]">
                 <span className="text-base leading-none text-[color:var(--ink)]">
-                  {ROLE_ICONS[player.role || Role.VILLAGER]}
+                  {getRoleIcon(player.role || Role.VILLAGER)}
                 </span>
                 <span>{player.role || 'Uloga'}</span>
               </span>
@@ -622,29 +782,102 @@ const App: React.FC = () => {
                               </button>
                             </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <button
-                              type="button"
-                              onClick={() => toggleDraftSetting('doctor')}
-                              className={`rounded-xl py-2 text-[10px] uppercase tracking-[0.3em] font-semibold ${
-                                draftSettings.doctor
-                                  ? 'bg-emerald-600 text-white'
-                                  : 'bg-[var(--surface-strong)] text-[color:var(--ink-muted)] border border-[color:var(--line)]'
-                              }`}
-                            >
-                              Doktor
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => toggleDraftSetting('detective')}
-                              className={`rounded-xl py-2 text-[10px] uppercase tracking-[0.3em] font-semibold ${
-                                draftSettings.detective
-                                  ? 'bg-amber-500 text-white'
-                                  : 'bg-[var(--surface-strong)] text-[color:var(--ink-muted)] border border-[color:var(--line)]'
-                              }`}
-                            >
-                              Inspektor
-                            </button>
+                          <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-3 space-y-3">
+                            <p className="text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-faint)]">Obavezne uloge</p>
+                            <p className="text-xs text-[color:var(--ink-muted)]">Doktor i Inspektor su uvek u igri.</p>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-[color:var(--ink-muted)]">Dama</span>
+                              <button
+                                type="button"
+                                onClick={toggleDraftLady}
+                                aria-pressed={draftSettings.lady}
+                                className={`relative inline-flex h-7 w-12 items-center rounded-full transition ${
+                                  draftSettings.lady
+                                    ? 'bg-red-600'
+                                    : 'bg-[var(--surface)] border border-[color:var(--line)]'
+                                }`}
+                              >
+                                <span
+                                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
+                                    draftSettings.lady ? 'translate-x-6' : 'translate-x-1'
+                                  }`}
+                                ></span>
+                              </button>
+                            </div>
+                            <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--ink-faint)]">
+                              {draftSettings.lady ? 'U igri' : 'Iskljucena'}
+                            </p>
+                          </div>
+                          <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-3 space-y-3">
+                            <p className="text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-faint)]">Dodatne uloge</p>
+                            <div className="flex items-center gap-2">
+                              <input
+                                className="flex-1 rounded-xl border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2 text-xs text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
+                                placeholder="Naziv uloge"
+                                value={draftCustomRoleName}
+                                onChange={(event) => setDraftCustomRoleName(event.target.value)}
+                              />
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setDraftCustomRoleCount((prev) => clampCustomRoleCount(prev - 1))}
+                                  className="h-8 w-8 rounded-lg border border-[color:var(--line)] bg-[var(--surface)] text-xs font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
+                                >
+                                  -
+                                </button>
+                                <span className="w-6 text-center text-xs font-semibold text-[color:var(--ink)]">{draftCustomRoleCount}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setDraftCustomRoleCount((prev) => clampCustomRoleCount(prev + 1))}
+                                  className="h-8 w-8 rounded-lg border border-[color:var(--line)] bg-[var(--surface)] text-xs font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
+                                >
+                                  +
+                                </button>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={handleAddDraftCustomRole}
+                                className="rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2 text-[10px] uppercase tracking-[0.3em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
+                              >
+                                Dodaj
+                              </button>
+                            </div>
+                            {draftSettings.customRoles.length > 0 && (
+                              <div className="space-y-2">
+                                {draftSettings.customRoles.map((role, index) => (
+                                  <div
+                                    key={`${role.name}-${index}`}
+                                    className="flex items-center justify-between rounded-xl border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2"
+                                  >
+                                    <span className="text-sm font-semibold text-[color:var(--ink)]">{role.name}</span>
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDraftCustomRoleCountChange(index, -1)}
+                                        className="h-7 w-7 rounded-lg border border-[color:var(--line)] bg-[var(--surface)] text-[10px] font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
+                                      >
+                                        -
+                                      </button>
+                                      <span className="w-5 text-center text-[10px] font-semibold text-[color:var(--ink)]">{role.count}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDraftCustomRoleCountChange(index, 1)}
+                                        className="h-7 w-7 rounded-lg border border-[color:var(--line)] bg-[var(--surface)] text-[10px] font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
+                                      >
+                                        +
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveDraftCustomRole(index)}
+                                        className="rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-2 py-1 text-[9px] uppercase tracking-[0.3em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
+                                      >
+                                        Ukloni
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}
@@ -708,6 +941,110 @@ const App: React.FC = () => {
                               </button>
                             </div>
                           </div>
+                          <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface)] p-3 space-y-3">
+                            <p className="text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-faint)]">Obavezne uloge</p>
+                            <p className="text-xs text-[color:var(--ink-muted)]">Doktor i Inspektor su uvek u igri.</p>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-[color:var(--ink-muted)]">Dama</span>
+                              <button
+                                type="button"
+                                onClick={handleLadyToggle}
+                                disabled={isBusy}
+                                aria-pressed={settings.lady}
+                                className={`relative inline-flex h-7 w-12 items-center rounded-full transition ${
+                                  settings.lady
+                                    ? 'bg-red-600'
+                                    : 'bg-[var(--surface-strong)] border border-[color:var(--line)]'
+                                } ${isBusy ? 'opacity-60' : ''}`}
+                              >
+                                <span
+                                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
+                                    settings.lady ? 'translate-x-6' : 'translate-x-1'
+                                  }`}
+                                ></span>
+                              </button>
+                            </div>
+                            <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--ink-faint)]">
+                              {settings.lady ? 'U igri' : 'Iskljucena'}
+                            </p>
+                          </div>
+                          <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface)] p-3 space-y-3">
+                            <p className="text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-faint)]">Dodatne uloge</p>
+                            <div className="flex items-center gap-2">
+                              <input
+                                className="flex-1 rounded-xl border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2 text-xs text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
+                                placeholder="Naziv uloge"
+                                value={customRoleName}
+                                onChange={(event) => setCustomRoleName(event.target.value)}
+                              />
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setCustomRoleCount((prev) => clampCustomRoleCount(prev - 1))}
+                                  disabled={isBusy}
+                                  className="h-8 w-8 rounded-lg border border-[color:var(--line)] bg-[var(--surface)] text-xs font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] disabled:opacity-60"
+                                >
+                                  -
+                                </button>
+                                <span className="w-6 text-center text-xs font-semibold text-[color:var(--ink)]">{customRoleCount}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setCustomRoleCount((prev) => clampCustomRoleCount(prev + 1))}
+                                  disabled={isBusy}
+                                  className="h-8 w-8 rounded-lg border border-[color:var(--line)] bg-[var(--surface)] text-xs font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] disabled:opacity-60"
+                                >
+                                  +
+                                </button>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={handleAddCustomRole}
+                                disabled={isBusy}
+                                className="rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2 text-[10px] uppercase tracking-[0.3em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] disabled:opacity-60"
+                              >
+                                Dodaj
+                              </button>
+                            </div>
+                            {settings.customRoles.length > 0 && (
+                              <div className="space-y-2">
+                                {settings.customRoles.map((role, index) => (
+                                  <div
+                                    key={`${role.name}-${index}`}
+                                    className="flex items-center justify-between rounded-xl border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2"
+                                  >
+                                    <span className="text-sm font-semibold text-[color:var(--ink)]">{role.name}</span>
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleCustomRoleCountChange(index, -1)}
+                                        disabled={isBusy}
+                                        className="h-7 w-7 rounded-lg border border-[color:var(--line)] bg-[var(--surface)] text-[10px] font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] disabled:opacity-60"
+                                      >
+                                        -
+                                      </button>
+                                      <span className="w-5 text-center text-[10px] font-semibold text-[color:var(--ink)]">{role.count}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleCustomRoleCountChange(index, 1)}
+                                        disabled={isBusy}
+                                        className="h-7 w-7 rounded-lg border border-[color:var(--line)] bg-[var(--surface)] text-[10px] font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] disabled:opacity-60"
+                                      >
+                                        +
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveCustomRole(index)}
+                                        disabled={isBusy}
+                                        className="rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-2 py-1 text-[9px] uppercase tracking-[0.3em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] disabled:opacity-60"
+                                      >
+                                        Ukloni
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                           <button
                             onClick={handleStart}
                             disabled={isBusy}
@@ -750,10 +1087,10 @@ const App: React.FC = () => {
                         </div>
 
                         <div className="relative flex flex-col items-center">
-                          <div className="text-6xl mb-4">{ROLE_ICONS[me?.role || Role.VILLAGER]}</div>
+                          <div className="text-6xl mb-4">{getRoleIcon(me?.role || Role.VILLAGER)}</div>
                           <h3 className="title-font text-3xl text-[color:var(--ink)] uppercase tracking-tight">{me?.role}</h3>
                           <p className="mt-3 text-xs text-[color:var(--ink-muted)] px-4">
-                            {ROLE_DESCRIPTIONS[me?.role || Role.VILLAGER]}
+                            {getRoleDescription(me?.role || Role.VILLAGER)}
                           </p>
                         </div>
                       </div>

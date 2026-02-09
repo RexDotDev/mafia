@@ -21,7 +21,7 @@ export async function joinRoom(payload: {
   roomCode: string;
   playerName: string;
   clientId: string;
-  settings?: { mafiaCount: number; doctor: boolean; detective: boolean };
+  settings?: { mafiaCount: number; doctor: boolean; detective: boolean; lady: boolean; customRoles: { name: string; count: number }[] };
 }): Promise<{ roomId: string }> {
   return postJson<{ roomId: string }>('/api/rooms/join', payload);
 }
@@ -43,7 +43,7 @@ export async function confirmRole(payload: {
 export async function updateSettings(payload: {
   roomCode: string;
   clientId: string;
-  settings: { mafiaCount: number; doctor: boolean; detective: boolean };
+  settings: { mafiaCount: number; doctor: boolean; detective: boolean; lady: boolean; customRoles: { name: string; count: number }[] };
 }): Promise<{ ok: true }> {
   return postJson<{ ok: true }>('/api/rooms/settings', payload);
 }

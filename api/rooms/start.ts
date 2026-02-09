@@ -64,8 +64,8 @@ export default async function handler(req: any, res: any) {
     .eq('room_id', room.id)
     .order('created_at', { ascending: true });
 
-  if (playersError || !players || players.length < 2) {
-    return toJson(res, 400, { error: 'Potrebno je bar 2 igraca.' });
+  if (playersError || !players || players.length < 4) {
+    return toJson(res, 400, { error: 'Potrebno je bar 4 igraca.' });
   }
 
   const narrator = players[Math.floor(Math.random() * players.length)];
@@ -76,14 +76,25 @@ export default async function handler(req: any, res: any) {
   }
 
   const settings = sanitizeSettings(room.settings);
-  const extraRoles = (settings.doctor ? 1 : 0) + (settings.detective ? 1 : 0);
-  const maxMafia = Math.max(1, participants.length - extraRoles);
+  const customRoles = settings.customRoles ?? [];
+  const customCount = customRoles.reduce((sum, role) => sum + role.count, 0);
+  const mandatoryCount = 2 + (settings.lady ? 1 : 0) + customCount;
+
+  if (participants.length < mandatoryCount + 1) {
+    return toJson(res, 400, { error: 'Nema dovoljno igraca za sve obavezne uloge.' });
+  }
+
+  const maxMafia = Math.max(1, participants.length - mandatoryCount);
   const mafiaCount = Math.min(Math.max(settings.mafiaCount, 1), maxMafia);
 
   const roles: string[] = [];
   for (let i = 0; i < mafiaCount; i += 1) roles.push(Role.MAFIA);
-  if (settings.doctor) roles.push(Role.DOCTOR);
-  if (settings.detective) roles.push(Role.DETECTIVE);
+  roles.push(Role.DOCTOR);
+  roles.push(Role.DETECTIVE);
+  if (settings.lady) roles.push(Role.LADY);
+  customRoles.forEach((role) => {
+    for (let i = 0; i < role.count; i += 1) roles.push(role.name);
+  });
   while (roles.length < participants.length) roles.push(Role.VILLAGER);
 
   const shuffledRoles = shuffle(roles);

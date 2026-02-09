@@ -3,6 +3,7 @@ export enum Role {
   VILLAGER = 'Građanin',
   DOCTOR = 'Doktor',
   DETECTIVE = 'Inspektor',
+  LADY = 'Dama',
   NARRATOR = 'Narator'
 }
 
@@ -14,11 +15,16 @@ export enum GamePhase {
   READY_TO_PLAY = 'READY_TO_PLAY'
 }
 
+export interface CustomRoleSetting {
+  name: string;
+  count: number;
+}
+
 export interface Player {
   id: string;
   clientId: string;
   name: string;
-  role?: Role;
+  role?: Role | string;
   hasConfirmed: boolean;
   isHost: boolean;
   isNarrator: boolean;
@@ -28,6 +34,8 @@ export interface RoomSettings {
   mafiaCount: number;
   doctor: boolean;
   detective: boolean;
+  lady: boolean;
+  customRoles: CustomRoleSetting[];
 }
 
 export interface RoomData {
