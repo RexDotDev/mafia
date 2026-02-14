@@ -79,6 +79,18 @@ const normalizeRoundState = (raw: any): RoundState | null => {
         .filter((event: any) => event.message)
     : [];
 
+  const votes = Array.isArray(raw?.votes)
+    ? raw.votes
+        .map((vote: any) => ({
+          voterId: typeof vote?.voterId === 'string' ? vote.voterId : '',
+          voterName: typeof vote?.voterName === 'string' ? vote.voterName : '',
+          targetId: typeof vote?.targetId === 'string' ? vote.targetId : '',
+          targetName: typeof vote?.targetName === 'string' ? vote.targetName : '',
+          createdAt: typeof vote?.createdAt === 'string' ? vote.createdAt : '',
+        }))
+        .filter((vote: any) => vote.voterId && vote.targetId)
+    : [];
+
   const eliminatedPlayerIds = Array.isArray(raw?.eliminatedPlayerIds)
     ? raw.eliminatedPlayerIds.filter((value: any) => typeof value === 'string')
     : [];
@@ -99,6 +111,7 @@ const normalizeRoundState = (raw: any): RoundState | null => {
     round: typeof raw?.round === 'number' ? raw.round : 0,
     phase: raw?.phase === 'night' || raw?.phase === 'voting' ? raw.phase : 'idle',
     actions,
+    votes,
     events,
     eliminatedPlayerIds,
     graveyardMessages,
@@ -117,6 +130,39 @@ const normalizeRoundState = (raw: any): RoundState | null => {
           mutedPlayerId: raw.lastResult.mutedPlayerId ?? null,
         }
       : null,
+    lastVoteSummary:
+      raw?.lastVoteSummary && typeof raw.lastVoteSummary === 'object'
+        ? {
+            totalVoters:
+              typeof raw.lastVoteSummary.totalVoters === 'number'
+                ? Math.max(0, Math.floor(raw.lastVoteSummary.totalVoters))
+                : 0,
+            completedVoters:
+              typeof raw.lastVoteSummary.completedVoters === 'number'
+                ? Math.max(0, Math.floor(raw.lastVoteSummary.completedVoters))
+                : 0,
+            eliminatedPlayerId:
+              typeof raw.lastVoteSummary.eliminatedPlayerId === 'string'
+                ? raw.lastVoteSummary.eliminatedPlayerId
+                : null,
+            eliminatedPlayerName:
+              typeof raw.lastVoteSummary.eliminatedPlayerName === 'string'
+                ? raw.lastVoteSummary.eliminatedPlayerName
+                : null,
+            voteCounts: Array.isArray(raw.lastVoteSummary.voteCounts)
+              ? raw.lastVoteSummary.voteCounts
+                  .map((entry: any) => ({
+                    playerId: typeof entry?.playerId === 'string' ? entry.playerId : '',
+                    playerName: typeof entry?.playerName === 'string' ? entry.playerName : '',
+                    votes:
+                      typeof entry?.votes === 'number'
+                        ? Math.max(0, Math.floor(entry.votes))
+                        : 0,
+                  }))
+                  .filter((entry: any) => entry.playerId)
+              : [],
+          }
+        : null,
   };
 };
 
@@ -431,18 +477,17 @@ const App: React.FC = () => {
   };
 
   const handleFinishVoting = async () => {
-    if (!roomCode) return;
+    if (!roomCode || !voteTargetId) return;
     setErrorMessage('');
     setIsBusy(true);
     try {
       await finishVoting({
         roomCode,
         clientId,
-        eliminatedPlayerId: voteTargetId || undefined,
+        targetId: voteTargetId,
       });
-      setVoteTargetId('');
     } catch (error: any) {
-      setErrorMessage(error?.message || 'Neuspesno zatvaranje glasanja.');
+      setErrorMessage(error?.message || 'Neuspesno slanje glasa.');
     } finally {
       setIsBusy(false);
     }
@@ -599,6 +644,30 @@ const App: React.FC = () => {
     [roundState?.actions, me?.id],
   );
 
+  const currentVotes = roundState?.votes ?? [];
+
+  const mySubmittedVote = useMemo(
+    () => currentVotes.find((vote) => vote.voterId === me?.id) ?? null,
+    [currentVotes, me?.id],
+  );
+
+  const votedPlayerIds = useMemo(
+    () => new Set(currentVotes.map((vote) => vote.voterId)),
+    [currentVotes],
+  );
+
+  const votedPlayers = useMemo(
+    () => alivePlayers.filter((player) => votedPlayerIds.has(player.id)),
+    [alivePlayers, votedPlayerIds],
+  );
+
+  const pendingVoters = useMemo(
+    () => alivePlayers.filter((player) => !votedPlayerIds.has(player.id)),
+    [alivePlayers, votedPlayerIds],
+  );
+
+  const lastVoteSummary = roundState?.lastVoteSummary ?? null;
+
   const availableNightTargets = useMemo(() => {
     if (!me || !myNightActionType) return [];
     return alivePlayers.filter(
@@ -613,6 +682,11 @@ const App: React.FC = () => {
       setGraveyardDraftMessage('');
     }
   }, [isMeEliminated]);
+
+  useEffect(() => {
+    if (roundState?.phase !== 'voting' || !mySubmittedVote?.targetId) return;
+    setVoteTargetId((prev) => prev || mySubmittedVote.targetId);
+  }, [roundState?.phase, mySubmittedVote?.targetId]);
 
   const roundInspectorPreview = useMemo(() => {
     const action = roundState?.actions.find((item) => item.type === 'detective_check');
@@ -779,6 +853,37 @@ const App: React.FC = () => {
     }
   };
 
+  const renderVoteSummaryPanel = () => {
+    if (room?.status !== 'finished' || !lastVoteSummary) return null;
+
+    return (
+      <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2 text-left">
+        <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">
+          Ishod glasanja
+        </p>
+        <div className="text-xs text-[color:var(--ink-muted)]">
+          Glasalo: {lastVoteSummary.completedVoters}/{lastVoteSummary.totalVoters}
+        </div>
+        <div className="text-xs text-[color:var(--ink-muted)]">
+          Izbacen: {lastVoteSummary.eliminatedPlayerName || 'niko'}
+        </div>
+        {lastVoteSummary.voteCounts.length > 0 && (
+          <div className="space-y-1.5 pt-1">
+            {lastVoteSummary.voteCounts.map((entry) => (
+              <div
+                key={entry.playerId}
+                className="flex items-center justify-between rounded-lg border border-[color:var(--line)] bg-[var(--surface-strong)] px-2.5 py-2 text-xs text-[color:var(--ink-muted)]"
+              >
+                <span>{entry.playerName}</span>
+                <span>{entry.votes}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const narratorPanel = (
     <div className="text-center space-y-5 sm:space-y-6 py-2">
       <div>
@@ -809,7 +914,7 @@ const App: React.FC = () => {
             Zivi: {alivePlayers.length ? alivePlayers.map((player) => player.name).join(', ') : 'nema'}
           </div>
 
-          {(roundState?.phase === 'idle' || roundState?.phase === 'voting' || !roundState) && (
+          {(roundState?.phase === 'idle' || !roundState) && (
             <button
               onClick={handleStartRound}
               disabled={isBusy}
@@ -831,25 +936,18 @@ const App: React.FC = () => {
 
           {roundState?.phase === 'voting' && (
             <div className="space-y-2">
-              <select
-                value={voteTargetId}
-                onChange={(event) => setVoteTargetId(event.target.value)}
-                className="w-full rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-xs text-[color:var(--ink)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
-              >
-                <option value="">Niko nije izbacen</option>
-                {alivePlayers.map((player) => (
-                  <option key={player.id} value={player.id}>
-                    {player.name}
-                  </option>
-                ))}
-              </select>
-              <button
-                onClick={handleFinishVoting}
-                disabled={isBusy}
-                className="w-full rounded-xl bg-[var(--ink)] py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
-              >
-                Zakljuci glasanje
-              </button>
+              <div className="text-xs text-[color:var(--ink-muted)]">
+                Glasalo: {votedPlayers.length}/{alivePlayers.length}
+              </div>
+              <div className="text-xs text-[color:var(--ink-muted)]">
+                Potvrdili glas: {votedPlayers.length ? votedPlayers.map((player) => player.name).join(', ') : 'niko'}
+              </div>
+              <div className="text-xs text-[color:var(--ink-muted)]">
+                Cekamo: {pendingVoters.length ? pendingVoters.map((player) => player.name).join(', ') : 'svi su glasali'}
+              </div>
+              <p className="text-[11px] text-[color:var(--ink-soft)]">
+                Kada svi zivi igraci potvrde glas, rezultat se automatski prikazuje svima.
+              </p>
             </div>
           )}
         </div>
@@ -897,6 +995,8 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
+
+      {renderVoteSummaryPanel()}
 
       {room?.status === 'finished' && roundState?.events?.length ? (
         <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2 text-left">
@@ -1718,11 +1818,48 @@ const App: React.FC = () => {
                           </p>
                         </div>
                       ) : roundState?.phase === 'voting' ? (
-                        <div>
-                          <h2 className="title-font text-3xl text-[color:var(--ink)]">Glasanje je u toku</h2>
-                          <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                            Narator zatvara glasanje i prelazi na sledecu rundu.
-                          </p>
+                        <div className="space-y-4">
+                          <div>
+                            <h2 className="title-font text-3xl text-[color:var(--ink)]">Glasanje je u toku</h2>
+                            <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
+                              Izaberi igraca i potvrdi glas. Rezultat izlazi kada svi zivi glasaju.
+                            </p>
+                          </div>
+                          <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 text-left space-y-3">
+                            <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]">
+                              Glasanje
+                            </p>
+                            <select
+                              value={voteTargetId}
+                              onChange={(event) => setVoteTargetId(event.target.value)}
+                              className="w-full rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-sm text-[color:var(--ink)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
+                            >
+                              <option value="">Izaberi igraca</option>
+                              {alivePlayers.map((player) => (
+                                <option key={player.id} value={player.id}>
+                                  {player.name}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              onClick={handleFinishVoting}
+                              disabled={isBusy || !voteTargetId}
+                              className="w-full rounded-xl bg-[var(--ink)] py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
+                            >
+                              Potvrdi glas
+                            </button>
+                            {mySubmittedVote && (
+                              <p className="text-xs text-[color:var(--ink-muted)]">
+                                Tvoj poslednji glas: {mySubmittedVote.targetName}
+                              </p>
+                            )}
+                            <div className="text-xs text-[color:var(--ink-muted)]">
+                              Glasalo: {votedPlayers.length}/{alivePlayers.length}
+                            </div>
+                            <div className="text-xs text-[color:var(--ink-muted)]">
+                              Cekamo: {pendingVoters.length ? pendingVoters.map((player) => player.name).join(', ') : 'svi su glasali'}
+                            </div>
+                          </div>
                         </div>
                       ) : (
                         <div>
@@ -1732,6 +1869,8 @@ const App: React.FC = () => {
                           </p>
                         </div>
                       )}
+
+                      {renderVoteSummaryPanel()}
 
                       <div className="h-px bg-[color:var(--line)] w-full"></div>
                       <div className="space-y-3">

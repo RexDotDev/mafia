@@ -94,7 +94,7 @@ export async function resolveRound(payload: {
 export async function finishVoting(payload: {
   roomCode: string;
   clientId: string;
-  eliminatedPlayerId?: string;
+  targetId?: string;
 }): Promise<{ ok: true }> {
   return postJson<{ ok: true }>('/api/rooms/round/vote', payload);
 }

@@ -155,11 +155,16 @@ export default async function handler(req: any, res: any) {
   const nextEliminated = killedPlayerId
     ? Array.from(new Set([...roundState.eliminatedPlayerIds, killedPlayerId]))
     : roundState.eliminatedPlayerIds;
+  const aliveAfterNight = activePlayers.filter(
+    (player: any) => !nextEliminated.includes(player.id),
+  );
+  const shouldOpenVoting = aliveAfterNight.length > 0;
 
   let nextState = {
     ...roundState,
-    phase: 'voting',
+    phase: shouldOpenVoting ? 'voting' : 'idle',
     actions: [],
+    votes: [],
     eliminatedPlayerIds: nextEliminated,
     lastResult: {
       ...createDefaultRoundResult(),
@@ -172,6 +177,15 @@ export default async function handler(req: any, res: any) {
       inspectorIsMafia,
       mutedPlayerId,
     },
+    lastVoteSummary: shouldOpenVoting
+      ? null
+      : {
+          totalVoters: 0,
+          completedVoters: 0,
+          eliminatedPlayerId: null,
+          eliminatedPlayerName: null,
+          voteCounts: [],
+        },
   };
 
   if (latestLadyAction) {
@@ -216,6 +230,15 @@ export default async function handler(req: any, res: any) {
     );
   } else {
     nextState = appendRoundEvent(nextState, roundState.round, 'mafia_kill', 'Mafija nije izvrsila ubistvo.');
+  }
+
+  if (!shouldOpenVoting) {
+    nextState = appendRoundEvent(
+      nextState,
+      roundState.round,
+      'vote_elimination',
+      'Nema zivih igraca za glasanje. Runda je automatski zavrsena.',
+    );
   }
 
   const { error: updateError } = await supabaseAdmin

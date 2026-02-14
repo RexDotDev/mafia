@@ -54,6 +54,9 @@ export default async function handler(req: any, res: any) {
   if (currentState.phase === 'night') {
     return toJson(res, 409, { error: 'Nocna runda je vec u toku.' });
   }
+  if (currentState.phase === 'voting') {
+    return toJson(res, 409, { error: 'Glasanje jos traje.' });
+  }
 
   const nextRound = currentState.round + 1;
   let nextState = {
@@ -61,7 +64,9 @@ export default async function handler(req: any, res: any) {
     round: nextRound,
     phase: 'night',
     actions: [],
+    votes: [],
     lastResult: null,
+    lastVoteSummary: null,
   };
   nextState = appendRoundEvent(nextState, nextRound, 'round_started', `Runda ${nextRound} je pokrenuta.`);
 

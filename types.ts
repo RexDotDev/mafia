@@ -78,6 +78,26 @@ export interface RoundEvent {
   createdAt: string;
 }
 
+export interface RoundVote {
+  voterId: string;
+  voterName: string;
+  targetId: string;
+  targetName: string;
+  createdAt: string;
+}
+
+export interface RoundVoteSummary {
+  totalVoters: number;
+  completedVoters: number;
+  eliminatedPlayerId: string | null;
+  eliminatedPlayerName: string | null;
+  voteCounts: Array<{
+    playerId: string;
+    playerName: string;
+    votes: number;
+  }>;
+}
+
 export interface GraveyardMessage {
   id: string;
   senderId: string;
@@ -90,9 +110,11 @@ export interface RoundState {
   round: number;
   phase: RoundPhase;
   actions: RoundAction[];
+  votes: RoundVote[];
   events: RoundEvent[];
   eliminatedPlayerIds: string[];
   lastResult: RoundResult | null;
+  lastVoteSummary: RoundVoteSummary | null;
   graveyardMessages: GraveyardMessage[];
 }
 

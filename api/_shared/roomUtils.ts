@@ -36,10 +36,12 @@ export function sanitizeSettings(input: any) {
     normalizedRoundState.round > 0 ||
     normalizedRoundState.events.length > 0 ||
     normalizedRoundState.actions.length > 0 ||
+    normalizedRoundState.votes.length > 0 ||
     normalizedRoundState.eliminatedPlayerIds.length > 0 ||
     normalizedRoundState.graveyardMessages.length > 0 ||
     normalizedRoundState.phase !== 'idle' ||
-    normalizedRoundState.lastResult !== null;
+    normalizedRoundState.lastResult !== null ||
+    normalizedRoundState.lastVoteSummary !== null;
 
   return {
     mafiaCount: typeof input?.mafiaCount === 'number' ? Math.max(1, input.mafiaCount) : DEFAULT_SETTINGS.mafiaCount,
