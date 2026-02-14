@@ -68,3 +68,41 @@ export async function pingRoom(payload: {
 }): Promise<{ ok: true }> {
   return postJson<{ ok: true }>('/api/rooms/ping', payload);
 }
+
+export async function startRound(payload: {
+  roomCode: string;
+  clientId: string;
+}): Promise<{ ok: true }> {
+  return postJson<{ ok: true }>('/api/rooms/round/start', payload);
+}
+
+export async function submitRoundAction(payload: {
+  roomCode: string;
+  clientId: string;
+  targetId: string;
+}): Promise<{ ok: true }> {
+  return postJson<{ ok: true }>('/api/rooms/round/action', payload);
+}
+
+export async function resolveRound(payload: {
+  roomCode: string;
+  clientId: string;
+}): Promise<{ ok: true }> {
+  return postJson<{ ok: true }>('/api/rooms/round/resolve', payload);
+}
+
+export async function finishVoting(payload: {
+  roomCode: string;
+  clientId: string;
+  eliminatedPlayerId?: string;
+}): Promise<{ ok: true }> {
+  return postJson<{ ok: true }>('/api/rooms/round/vote', payload);
+}
+
+export async function sendGraveyardMessage(payload: {
+  roomCode: string;
+  clientId: string;
+  message: string;
+}): Promise<{ ok: true }> {
+  return postJson<{ ok: true }>('/api/rooms/graveyard/message', payload);
+}

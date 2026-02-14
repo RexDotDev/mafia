@@ -38,9 +38,68 @@ export interface RoomSettings {
   customRoles: CustomRoleSetting[];
 }
 
+export type RoundPhase = 'idle' | 'night' | 'voting';
+
+export type RoundActionType = 'mafia_kill' | 'doctor_heal' | 'detective_check' | 'lady_silence';
+
+export interface RoundAction {
+  actorId: string;
+  actorName: string;
+  role: string;
+  type: RoundActionType;
+  targetId: string;
+  targetName: string;
+  createdAt: string;
+}
+
+export interface RoundResult {
+  mafiaTargetId: string | null;
+  killedPlayerId: string | null;
+  doctorTargetId: string | null;
+  doctorSaved: boolean;
+  ladyTargetId: string | null;
+  inspectorTargetId: string | null;
+  inspectorIsMafia: boolean | null;
+  mutedPlayerId: string | null;
+}
+
+export interface RoundEvent {
+  id: string;
+  round: number;
+  type:
+    | 'round_started'
+    | 'mafia_kill'
+    | 'doctor_heal'
+    | 'detective_check'
+    | 'lady_silence'
+    | 'vote_elimination'
+    | 'note';
+  message: string;
+  createdAt: string;
+}
+
+export interface GraveyardMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  message: string;
+  createdAt: string;
+}
+
+export interface RoundState {
+  round: number;
+  phase: RoundPhase;
+  actions: RoundAction[];
+  events: RoundEvent[];
+  eliminatedPlayerIds: string[];
+  lastResult: RoundResult | null;
+  graveyardMessages: GraveyardMessage[];
+}
+
 export interface RoomData {
   id: string;
   players: Player[];
   status: 'waiting' | 'started' | 'finished';
   settings: RoomSettings;
+  roundState: RoundState | null;
 }

@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../_shared/supabase.js';
 import { normalizeRoomCode } from '../_shared/roomUtils.js';
+import { sanitizeSettings } from '../_shared/roomUtils.js';
 
 const toJson = (res: any, status: number, payload: any) => {
   res.status(status).json(payload);
@@ -21,7 +22,7 @@ export default async function handler(req: any, res: any) {
   const code = normalizeRoomCode(roomCode);
   const { data: room, error: roomError } = await supabaseAdmin
     .from('rooms')
-    .select('id')
+    .select('id, settings')
     .eq('code', code)
     .maybeSingle();
 
@@ -54,9 +55,11 @@ export default async function handler(req: any, res: any) {
     return toJson(res, 500, { error: resetPlayersError.message || 'Failed to reset players' });
   }
 
+  const sanitizedSettings = sanitizeSettings(room.settings);
+
   const { error: resetRoomError } = await supabaseAdmin
     .from('rooms')
-    .update({ status: 'waiting' })
+    .update({ status: 'waiting', settings: { ...sanitizedSettings, roundState: null } })
     .eq('id', room.id);
 
   if (resetRoomError) {

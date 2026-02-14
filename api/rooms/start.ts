@@ -127,7 +127,7 @@ export default async function handler(req: any, res: any) {
 
   const { error: updateRoomError } = await supabaseAdmin
     .from('rooms')
-    .update({ status: 'started', settings: { ...settings, mafiaCount } })
+    .update({ status: 'started', settings: { ...settings, mafiaCount, roundState: null } })
     .eq('id', room.id);
 
   if (updateRoomError) {

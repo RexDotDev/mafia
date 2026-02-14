@@ -1,8 +1,29 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { CustomRoleSetting, GamePhase, Role, RoomData, RoomSettings } from './types';
+import {
+  CustomRoleSetting,
+  GamePhase,
+  Role,
+  RoomData,
+  RoomSettings,
+  RoundActionType,
+  RoundState,
+} from './types';
 import { getRoleDescription, getRoleIcon } from './constants';
 import { supabase } from './services/supabaseClient';
-import { confirmRole, joinRoom, leaveRoom, pingRoom, resetGame, startGame, updateSettings } from './services/roomApi';
+import {
+  confirmRole,
+  finishVoting,
+  joinRoom,
+  leaveRoom,
+  pingRoom,
+  resetGame,
+  resolveRound,
+  sendGraveyardMessage,
+  startGame,
+  startRound,
+  submitRoundAction,
+  updateSettings,
+} from './services/roomApi';
 
 const DEFAULT_SETTINGS: RoomSettings = {
   mafiaCount: 1,
@@ -30,6 +51,75 @@ const normalizeSettings = (raw: any): RoomSettings => {
   };
 };
 
+const normalizeRoundState = (raw: any): RoundState | null => {
+  if (!raw || typeof raw !== 'object') return null;
+  const actions = Array.isArray(raw?.actions)
+    ? raw.actions
+        .map((action: any) => ({
+          actorId: typeof action?.actorId === 'string' ? action.actorId : '',
+          actorName: typeof action?.actorName === 'string' ? action.actorName : '',
+          role: typeof action?.role === 'string' ? action.role : '',
+          type: action?.type as RoundActionType,
+          targetId: typeof action?.targetId === 'string' ? action.targetId : '',
+          targetName: typeof action?.targetName === 'string' ? action.targetName : '',
+          createdAt: typeof action?.createdAt === 'string' ? action.createdAt : '',
+        }))
+        .filter((action: any) => action.actorId && action.targetId && action.type)
+    : [];
+
+  const events = Array.isArray(raw?.events)
+    ? raw.events
+        .map((event: any) => ({
+          id: typeof event?.id === 'string' ? event.id : Math.random().toString(36).slice(2),
+          round: typeof event?.round === 'number' ? event.round : 0,
+          type: typeof event?.type === 'string' ? event.type : 'note',
+          message: typeof event?.message === 'string' ? event.message : '',
+          createdAt: typeof event?.createdAt === 'string' ? event.createdAt : '',
+        }))
+        .filter((event: any) => event.message)
+    : [];
+
+  const eliminatedPlayerIds = Array.isArray(raw?.eliminatedPlayerIds)
+    ? raw.eliminatedPlayerIds.filter((value: any) => typeof value === 'string')
+    : [];
+
+  const graveyardMessages = Array.isArray(raw?.graveyardMessages)
+    ? raw.graveyardMessages
+        .map((message: any) => ({
+          id: typeof message?.id === 'string' ? message.id : Math.random().toString(36).slice(2),
+          senderId: typeof message?.senderId === 'string' ? message.senderId : '',
+          senderName: typeof message?.senderName === 'string' ? message.senderName : '',
+          message: typeof message?.message === 'string' ? message.message : '',
+          createdAt: typeof message?.createdAt === 'string' ? message.createdAt : '',
+        }))
+        .filter((message: any) => message.senderId && message.senderName && message.message)
+    : [];
+
+  return {
+    round: typeof raw?.round === 'number' ? raw.round : 0,
+    phase: raw?.phase === 'night' || raw?.phase === 'voting' ? raw.phase : 'idle',
+    actions,
+    events,
+    eliminatedPlayerIds,
+    graveyardMessages,
+    lastResult: raw?.lastResult && typeof raw.lastResult === 'object'
+      ? {
+          mafiaTargetId: raw.lastResult.mafiaTargetId ?? null,
+          killedPlayerId: raw.lastResult.killedPlayerId ?? null,
+          doctorTargetId: raw.lastResult.doctorTargetId ?? null,
+          doctorSaved: !!raw.lastResult.doctorSaved,
+          ladyTargetId: raw.lastResult.ladyTargetId ?? null,
+          inspectorTargetId: raw.lastResult.inspectorTargetId ?? null,
+          inspectorIsMafia:
+            typeof raw.lastResult.inspectorIsMafia === 'boolean'
+              ? raw.lastResult.inspectorIsMafia
+              : null,
+          mutedPlayerId: raw.lastResult.mutedPlayerId ?? null,
+        }
+      : null,
+  };
+};
+
 type EntryMode = 'join' | 'create';
 type ThemeMode = 'light' | 'dark';
 
@@ -52,6 +142,9 @@ const App: React.FC = () => {
   const [showDraftCustomRoles, setShowDraftCustomRoles] = useState(false);
   const [customRoleName, setCustomRoleName] = useState('');
   const [customRoleCount, setCustomRoleCount] = useState(1);
+  const [nightTargetId, setNightTargetId] = useState('');
+  const [voteTargetId, setVoteTargetId] = useState('');
+  const [graveyardDraftMessage, setGraveyardDraftMessage] = useState('');
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
   const [hasRestoredSession, setHasRestoredSession] = useState(false);
   const [theme, setTheme] = useState<ThemeMode>(() => {
@@ -108,13 +201,24 @@ const App: React.FC = () => {
       isNarrator: !!player.is_narrator,
     }));
 
+    const normalizedRoundState = normalizeRoundState(roomRow.settings?.roundState);
+    const currentPlayer = players.find((player) => player.clientId === clientId);
+    const canSeeGraveyard =
+      !!currentPlayer &&
+      (currentPlayer.isNarrator ||
+        (!!normalizedRoundState && normalizedRoundState.eliminatedPlayerIds.includes(currentPlayer.id)));
+
     setRoom({
       id: roomRow.id,
       status: roomRow.status,
       settings: normalizeSettings(roomRow.settings),
       players,
+      roundState:
+        normalizedRoundState && !canSeeGraveyard
+          ? { ...normalizedRoundState, graveyardMessages: [] }
+          : normalizedRoundState,
     });
-  }, []);
+  }, [clientId]);
 
   useEffect(() => {
     if (!roomId) return;
@@ -190,6 +294,13 @@ const App: React.FC = () => {
       setPhase(GamePhase.READY_TO_PLAY);
     }
   }, [room, me?.hasConfirmed]);
+
+  useEffect(() => {
+    setNightTargetId('');
+    if (room?.roundState?.phase !== 'voting') {
+      setVoteTargetId('');
+    }
+  }, [room?.roundState?.round, room?.roundState?.phase]);
 
   const joinWithPayload = async (
     code: string,
@@ -274,6 +385,82 @@ const App: React.FC = () => {
       });
     } catch (error: any) {
       setErrorMessage(error?.message || 'Neuspešna promena podešavanja.');
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const handleStartRound = async () => {
+    if (!roomCode) return;
+    setErrorMessage('');
+    setIsBusy(true);
+    try {
+      await startRound({ roomCode, clientId });
+      setVoteTargetId('');
+    } catch (error: any) {
+      setErrorMessage(error?.message || 'Neuspesno pokretanje runde.');
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const handleSubmitNightAction = async () => {
+    if (!roomCode || !nightTargetId) return;
+    setErrorMessage('');
+    setIsBusy(true);
+    try {
+      await submitRoundAction({ roomCode, clientId, targetId: nightTargetId });
+    } catch (error: any) {
+      setErrorMessage(error?.message || 'Neuspesno slanje akcije.');
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const handleResolveRound = async () => {
+    if (!roomCode) return;
+    setErrorMessage('');
+    setIsBusy(true);
+    try {
+      await resolveRound({ roomCode, clientId });
+    } catch (error: any) {
+      setErrorMessage(error?.message || 'Neuspesno zakljucivanje noci.');
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const handleFinishVoting = async () => {
+    if (!roomCode) return;
+    setErrorMessage('');
+    setIsBusy(true);
+    try {
+      await finishVoting({
+        roomCode,
+        clientId,
+        eliminatedPlayerId: voteTargetId || undefined,
+      });
+      setVoteTargetId('');
+    } catch (error: any) {
+      setErrorMessage(error?.message || 'Neuspesno zatvaranje glasanja.');
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const handleSendGraveyardMessage = async () => {
+    if (!roomCode || !graveyardDraftMessage.trim()) return;
+    setErrorMessage('');
+    setIsBusy(true);
+    try {
+      await sendGraveyardMessage({
+        roomCode,
+        clientId,
+        message: graveyardDraftMessage.trim(),
+      });
+      setGraveyardDraftMessage('');
+    } catch (error: any) {
+      setErrorMessage(error?.message || 'Neuspesno slanje poruke u groblje.');
     } finally {
       setIsBusy(false);
     }
@@ -372,6 +559,80 @@ const App: React.FC = () => {
 
   const players = room?.players ?? [];
   const settings = room?.settings ?? DEFAULT_SETTINGS;
+  const roundState = room?.roundState;
+
+  const eliminatedPlayerIds = useMemo(
+    () => new Set(roundState?.eliminatedPlayerIds ?? []),
+    [roundState?.eliminatedPlayerIds],
+  );
+
+  const alivePlayers = useMemo(
+    () => players.filter((player) => !player.isNarrator && !eliminatedPlayerIds.has(player.id)),
+    [players, eliminatedPlayerIds],
+  );
+
+  const graveyardPlayers = useMemo(
+    () => players.filter((player) => !player.isNarrator && eliminatedPlayerIds.has(player.id)),
+    [players, eliminatedPlayerIds],
+  );
+
+  const graveyardMessages = useMemo(
+    () => (roundState?.graveyardMessages ?? []).slice(-120),
+    [roundState?.graveyardMessages],
+  );
+
+  const playerNameById = useMemo(
+    () => new Map(players.map((player) => [player.id, player.name])),
+    [players],
+  );
+
+  const myNightActionType = useMemo(() => {
+    if (me?.role === Role.MAFIA) return 'mafia_kill';
+    if (me?.role === Role.DOCTOR) return 'doctor_heal';
+    if (me?.role === Role.DETECTIVE) return 'detective_check';
+    if (me?.role === Role.LADY) return 'lady_silence';
+    return null;
+  }, [me?.role]);
+
+  const mySubmittedAction = useMemo(
+    () => roundState?.actions.find((action) => action.actorId === me?.id),
+    [roundState?.actions, me?.id],
+  );
+
+  const availableNightTargets = useMemo(() => {
+    if (!me || !myNightActionType) return [];
+    return alivePlayers.filter(
+      (player) => player.id !== me.id || myNightActionType === 'doctor_heal',
+    );
+  }, [alivePlayers, me, myNightActionType]);
+
+  const isMeEliminated = me ? eliminatedPlayerIds.has(me.id) : false;
+
+  useEffect(() => {
+    if (!isMeEliminated) {
+      setGraveyardDraftMessage('');
+    }
+  }, [isMeEliminated]);
+
+  const roundInspectorPreview = useMemo(() => {
+    const action = roundState?.actions.find((item) => item.type === 'detective_check');
+    if (!action) return null;
+    const inspected = players.find((player) => player.id === action.targetId);
+    if (!inspected) return null;
+    const isMafia = inspected.role === Role.LADY ? false : inspected.role === Role.MAFIA;
+    return {
+      targetName: action.targetName,
+      isMafia,
+    };
+  }, [roundState?.actions, players]);
+
+  const roundActionSummary = useMemo(() => {
+    const mafia = roundState?.actions.filter((action) => action.type === 'mafia_kill') ?? [];
+    const doctor = roundState?.actions.find((action) => action.type === 'doctor_heal') ?? null;
+    const detective = roundState?.actions.find((action) => action.type === 'detective_check') ?? null;
+    const lady = roundState?.actions.find((action) => action.type === 'lady_silence') ?? null;
+    return { mafia, doctor, detective, lady };
+  }, [roundState?.actions]);
 
 
   const handleModeChange = (mode: EntryMode) => {
@@ -508,6 +769,7 @@ const App: React.FC = () => {
     setShowDraftCustomRoles(false);
     setCustomRoleName('');
     setCustomRoleCount(1);
+    setGraveyardDraftMessage('');
 
     if (!code) return;
     try {
@@ -525,9 +787,163 @@ const App: React.FC = () => {
           Ti vodis igru. Imas pregled svih uloga i ne ucestvujes u glasanjima.
         </p>
         {room?.status === 'finished' && (
-          <p className="mt-2 text-xs uppercase tracking-[0.3em] text-emerald-600">Svi su videli uloge</p>
+          <p className="mt-2 text-xs uppercase tracking-[0.3em] text-emerald-600">
+            Svi su videli uloge. Runda {roundState?.round || 0}
+          </p>
         )}
       </div>
+
+      {room?.status === 'finished' && (
+        <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-3 text-left">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Kontrola runde</p>
+            <span className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--ink-soft)]">
+              Faza: {roundState?.phase || 'idle'}
+            </span>
+          </div>
+
+          <div className="text-xs text-[color:var(--ink-muted)]">
+            Aktivnih igraca: {alivePlayers.length}
+          </div>
+          <div className="text-xs text-[color:var(--ink-muted)]">
+            Zivi: {alivePlayers.length ? alivePlayers.map((player) => player.name).join(', ') : 'nema'}
+          </div>
+
+          {(roundState?.phase === 'idle' || roundState?.phase === 'voting' || !roundState) && (
+            <button
+              onClick={handleStartRound}
+              disabled={isBusy}
+              className="w-full rounded-xl bg-[var(--ink)] py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
+            >
+              Pokreni nocnu rundu
+            </button>
+          )}
+
+          {roundState?.phase === 'night' && (
+            <button
+              onClick={handleResolveRound}
+              disabled={isBusy}
+              className="w-full rounded-xl bg-[var(--ink)] py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
+            >
+              Zakljuci noc
+            </button>
+          )}
+
+          {roundState?.phase === 'voting' && (
+            <div className="space-y-2">
+              <select
+                value={voteTargetId}
+                onChange={(event) => setVoteTargetId(event.target.value)}
+                className="w-full rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-xs text-[color:var(--ink)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
+              >
+                <option value="">Niko nije izbacen</option>
+                {alivePlayers.map((player) => (
+                  <option key={player.id} value={player.id}>
+                    {player.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={handleFinishVoting}
+                disabled={isBusy}
+                className="w-full rounded-xl bg-[var(--ink)] py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
+              >
+                Zakljuci glasanje
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {room?.status === 'finished' && roundState?.phase === 'night' && (
+        <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2 text-left">
+          <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Akcije ove noci</p>
+          <div className="text-xs text-[color:var(--ink-muted)]">
+            Mafija cilja:{' '}
+            {roundActionSummary.mafia.length
+              ? roundActionSummary.mafia.map((item) => item.targetName).join(', ')
+              : 'nema odabira'}
+          </div>
+          <div className="text-xs text-[color:var(--ink-muted)]">
+            Dama ucutkava: {roundActionSummary.lady?.targetName || 'nema odabira'}
+          </div>
+          <div className="text-xs text-[color:var(--ink-muted)]">
+            Lekar leci: {roundActionSummary.doctor?.targetName || 'nema odabira'}
+          </div>
+          <div className="text-xs text-[color:var(--ink-muted)]">
+            Inspektor proverava: {roundInspectorPreview?.targetName || roundActionSummary.detective?.targetName || 'nema odabira'}
+            {roundInspectorPreview && ` (${roundInspectorPreview.isMafia ? 'mafijas' : 'nije mafijas'})`}
+          </div>
+        </div>
+      )}
+
+      {room?.status === 'finished' && roundState?.lastResult && (
+        <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2 text-left">
+          <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Ishod prethodne noci</p>
+          <div className="text-xs text-[color:var(--ink-muted)]">
+            Mafija je ubila: {roundState.lastResult.killedPlayerId ? playerNameById.get(roundState.lastResult.killedPlayerId) : 'nikog'}
+          </div>
+          <div className="text-xs text-[color:var(--ink-muted)]">
+            Inspektor je proverio: {roundState.lastResult.inspectorTargetId ? playerNameById.get(roundState.lastResult.inspectorTargetId) : 'nikog'}
+            {roundState.lastResult.inspectorTargetId &&
+              ` - ${roundState.lastResult.inspectorIsMafia ? 'mafijas' : 'nije mafijas'}`}
+          </div>
+          <div className="text-xs text-[color:var(--ink-muted)]">
+            Lekar je lecio: {roundState.lastResult.doctorTargetId ? playerNameById.get(roundState.lastResult.doctorTargetId) : 'nikog'}
+            {roundState.lastResult.doctorSaved ? ' (uspesno spasavanje)' : ''}
+          </div>
+          <div className="text-xs text-[color:var(--ink-muted)]">
+            Dama je ucutkala: {roundState.lastResult.ladyTargetId ? playerNameById.get(roundState.lastResult.ladyTargetId) : 'nikog'}
+          </div>
+        </div>
+      )}
+
+      {room?.status === 'finished' && roundState?.events?.length ? (
+        <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2 text-left">
+          <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Dogadjaji rundi</p>
+          <div className="max-h-52 overflow-y-auto space-y-1.5 pr-1">
+            {[...roundState.events].slice(-14).reverse().map((event) => (
+              <div
+                key={event.id}
+                className="rounded-lg border border-[color:var(--line)] bg-[var(--surface-strong)] px-2.5 py-2 text-xs text-[color:var(--ink-muted)]"
+              >
+                <span className="text-[10px] uppercase tracking-[0.14em] text-[color:var(--ink-soft)]">
+                  Runda {event.round}
+                </span>
+                <div className="mt-1">{event.message}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {room?.status === 'finished' && (
+        <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-3 text-left">
+          <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Groblje</p>
+          <div className="text-xs text-[color:var(--ink-muted)]">
+            U groblju: {graveyardPlayers.length ? graveyardPlayers.map((player) => player.name).join(', ') : 'niko'}
+          </div>
+          <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
+            {graveyardMessages.length ? (
+              [...graveyardMessages].reverse().map((message) => (
+                <div
+                  key={message.id}
+                  className="rounded-lg border border-[color:var(--line)] bg-[var(--surface-strong)] px-2.5 py-2 text-xs text-[color:var(--ink-muted)]"
+                >
+                  <span className="font-semibold text-[color:var(--ink)]">{message.senderName}:</span>{' '}
+                  {message.message}
+                </div>
+              ))
+            ) : (
+              <p className="text-xs text-[color:var(--ink-soft)]">Nema poruka u groblju.</p>
+            )}
+          </div>
+          <p className="text-[10px] uppercase tracking-[0.14em] text-[color:var(--ink-soft)]">
+            Narator ima samo pregled ovog chata.
+          </p>
+        </div>
+      )}
+
       <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-3">
         <p className="text-[10px] uppercase tracking-[0.22em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Uloge igraca</p>
         {players
@@ -551,7 +967,9 @@ const App: React.FC = () => {
               key={player.id}
               className="flex min-w-0 flex-col items-start gap-2 rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
             >
-              <span className={`w-full min-w-0 break-words text-left text-sm font-bold ${nameTone}`}>{player.name}</span>
+              <span className={`w-full min-w-0 break-words text-left text-sm font-bold ${nameTone}`}>
+                {player.name} {eliminatedPlayerIds.has(player.id) ? '(eliminisan)' : ''}
+              </span>
               <span className="flex w-full items-center gap-2 text-[10px] uppercase tracking-[0.2em] sm:w-auto sm:tracking-[0.3em]">
                 <span className="text-base leading-none text-[color:var(--ink)]">
                   {getRoleIcon(player.role || Role.VILLAGER)}
@@ -1188,12 +1606,133 @@ const App: React.FC = () => {
                     narratorPanel
                   ) : (
                     <div className="text-center space-y-5 sm:space-y-6 py-4">
-                      <div>
-                        <h2 className="title-font text-3xl text-[color:var(--ink)]">Spremni!</h2>
-                        <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                          Svi igraci su videli svoje uloge. Odlozite telefone i pocnite igru uzivo.
-                        </p>
-                      </div>
+                      {isMeEliminated ? (
+                        <div className="space-y-4">
+                          <div>
+                            <h2 className="title-font text-3xl text-[color:var(--ink)]">Groblje</h2>
+                            <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
+                              Eliminisan si. Mozes da komuniciras samo sa igracima u groblju.
+                            </p>
+                          </div>
+                          <div className="grid gap-3 text-left">
+                            <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2">
+                              <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]">
+                                Clanovi groblja
+                              </p>
+                              {graveyardPlayers.length ? (
+                                <div className="text-xs text-[color:var(--ink-muted)]">
+                                  {graveyardPlayers.map((player) => player.name).join(', ')}
+                                </div>
+                              ) : (
+                                <div className="text-xs text-[color:var(--ink-soft)]">Trenutno si sam u groblju.</div>
+                              )}
+                            </div>
+                            <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-3">
+                              <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]">
+                                Chat groblja
+                              </p>
+                              <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
+                                {graveyardMessages.length ? (
+                                  [...graveyardMessages].reverse().map((message) => (
+                                    <div
+                                      key={message.id}
+                                      className="rounded-lg border border-[color:var(--line)] bg-[var(--surface-strong)] px-2.5 py-2 text-xs text-[color:var(--ink-muted)]"
+                                    >
+                                      <span className="font-semibold text-[color:var(--ink)]">{message.senderName}:</span>{' '}
+                                      {message.message}
+                                    </div>
+                                  ))
+                                ) : (
+                                  <p className="text-xs text-[color:var(--ink-soft)]">Nema poruka.</p>
+                                )}
+                              </div>
+                              <div className="space-y-2">
+                                <textarea
+                                  value={graveyardDraftMessage}
+                                  onChange={(event) => setGraveyardDraftMessage(event.target.value)}
+                                  placeholder="Poruka za groblje..."
+                                  className="min-h-[72px] w-full resize-y rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-sm text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
+                                />
+                                <button
+                                  onClick={handleSendGraveyardMessage}
+                                  disabled={isBusy || !graveyardDraftMessage.trim()}
+                                  className="w-full rounded-xl bg-[var(--ink)] py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
+                                >
+                                  Posalji poruku
+                                </button>
+                              </div>
+                            </div>
+                            <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2">
+                              <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]">
+                                Pregled igre
+                              </p>
+                              <div className="text-xs text-[color:var(--ink-muted)]">
+                                Zivi igraci: {alivePlayers.length ? alivePlayers.map((player) => player.name).join(', ') : 'nema'}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ) : roundState?.phase === 'night' && myNightActionType ? (
+                        <div className="space-y-4">
+                          <div>
+                            <h2 className="title-font text-3xl text-[color:var(--ink)]">Nocna akcija</h2>
+                            <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
+                              Izaberi igraca za svoju akciju i potvrdi slanje.
+                            </p>
+                          </div>
+                          <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 text-left space-y-3">
+                            <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]">
+                              Tvoja uloga: {me?.role}
+                            </p>
+                            <select
+                              value={nightTargetId}
+                              onChange={(event) => setNightTargetId(event.target.value)}
+                              className="w-full rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-sm text-[color:var(--ink)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
+                            >
+                              <option value="">Izaberi igraca</option>
+                              {availableNightTargets.map((player) => (
+                                <option key={player.id} value={player.id}>
+                                  {player.name}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              onClick={handleSubmitNightAction}
+                              disabled={isBusy || !nightTargetId}
+                              className="w-full rounded-xl bg-[var(--ink)] py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
+                            >
+                              Posalji akciju
+                            </button>
+                            {mySubmittedAction && (
+                              <p className="text-xs text-[color:var(--ink-muted)]">
+                                Poslednji izbor: {mySubmittedAction.targetName}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ) : roundState?.phase === 'night' ? (
+                        <div>
+                          <h2 className="title-font text-3xl text-[color:var(--ink)]">Noc je u toku</h2>
+                          <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
+                            Tvoja uloga nema nocnu akciju. Cekamo ostale igrace i naratora.
+                          </p>
+                        </div>
+                      ) : roundState?.phase === 'voting' ? (
+                        <div>
+                          <h2 className="title-font text-3xl text-[color:var(--ink)]">Glasanje je u toku</h2>
+                          <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
+                            Narator zatvara glasanje i prelazi na sledecu rundu.
+                          </p>
+                        </div>
+                      ) : (
+                        <div>
+                          <h2 className="title-font text-3xl text-[color:var(--ink)]">Spremni!</h2>
+                          <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
+                            Cekamo da narator pokrene sledecu nocnu rundu.
+                          </p>
+                        </div>
+                      )}
+
                       <div className="h-px bg-[color:var(--line)] w-full"></div>
                       <div className="space-y-3">
                         {me?.isHost && (

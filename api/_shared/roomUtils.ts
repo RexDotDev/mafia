@@ -1,9 +1,12 @@
+import { normalizeRoundState } from './roundState.js';
+
 export const DEFAULT_SETTINGS = {
   mafiaCount: 1,
   doctor: true,
   detective: true,
   lady: false,
   customRoles: [] as { name: string; count: number }[],
+  roundState: null as any,
 };
 
 export function normalizeRoomCode(code: string): string {
@@ -28,11 +31,22 @@ const sanitizeCustomRoles = (input: any) => {
 };
 
 export function sanitizeSettings(input: any) {
+  const normalizedRoundState = normalizeRoundState(input?.roundState);
+  const hasRoundState =
+    normalizedRoundState.round > 0 ||
+    normalizedRoundState.events.length > 0 ||
+    normalizedRoundState.actions.length > 0 ||
+    normalizedRoundState.eliminatedPlayerIds.length > 0 ||
+    normalizedRoundState.graveyardMessages.length > 0 ||
+    normalizedRoundState.phase !== 'idle' ||
+    normalizedRoundState.lastResult !== null;
+
   return {
     mafiaCount: typeof input?.mafiaCount === 'number' ? Math.max(1, input.mafiaCount) : DEFAULT_SETTINGS.mafiaCount,
     doctor: true,
     detective: true,
     lady: typeof input?.lady === 'boolean' ? input.lady : DEFAULT_SETTINGS.lady,
     customRoles: sanitizeCustomRoles(input?.customRoles),
+    roundState: hasRoundState ? normalizedRoundState : null,
   };
 }
