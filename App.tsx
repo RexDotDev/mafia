@@ -49,6 +49,7 @@ const App: React.FC = () => {
   const [draftSettings, setDraftSettings] = useState<RoomSettings>(DEFAULT_SETTINGS);
   const [draftCustomRoleName, setDraftCustomRoleName] = useState('');
   const [draftCustomRoleCount, setDraftCustomRoleCount] = useState(1);
+  const [showDraftCustomRoles, setShowDraftCustomRoles] = useState(false);
   const [customRoleName, setCustomRoleName] = useState('');
   const [customRoleCount, setCustomRoleCount] = useState(1);
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
@@ -376,6 +377,7 @@ const App: React.FC = () => {
   const handleModeChange = (mode: EntryMode) => {
     setEntryMode(mode);
     setErrorMessage('');
+    setShowDraftCustomRoles(false);
     if (mode === 'create') {
       setRoomCode(generateRoomCode());
       setDraftSettings(DEFAULT_SETTINGS);
@@ -503,6 +505,7 @@ const App: React.FC = () => {
     setDraftSettings(DEFAULT_SETTINGS);
     setDraftCustomRoleName('');
     setDraftCustomRoleCount(1);
+    setShowDraftCustomRoles(false);
     setCustomRoleName('');
     setCustomRoleCount(1);
 
@@ -704,21 +707,23 @@ const App: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setRoomCode(generateRoomCode())}
-                      className="w-full rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-4 py-3 text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] transition"
+                      className="w-full rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-[9px] uppercase tracking-[0.2em] sm:tracking-[0.3em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] transition"
                     >
                       Novi kod
                     </button>
                   )}
 
-                  <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 text-xs text-[color:var(--ink-muted)]">
-                    <div className="flex items-center gap-2 text-[color:var(--ink-muted)]">
-                      <span className="h-2 w-2 rounded-full bg-red-500"></span>
-                      <span>Privatno deljenje uloga</span>
+                  {!(phase === GamePhase.JOIN && entryMode === 'create') && (
+                    <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 text-xs text-[color:var(--ink-muted)]">
+                      <div className="flex items-center gap-2 text-[color:var(--ink-muted)]">
+                        <span className="h-2 w-2 rounded-full bg-red-500"></span>
+                        <span>Privatno deljenje uloga</span>
+                      </div>
+                      <p className="mt-2 leading-relaxed">
+                        Telefoni samo za uloge. Glasanje i eliminacije idu uzivo.
+                      </p>
                     </div>
-                    <p className="mt-2 leading-relaxed">
-                      Telefoni samo za uloge. Glasanje i eliminacije idu uzivo.
-                    </p>
-                  </div>
+                  )}
                 </aside>
 
                 <main className="p-5 sm:p-6 md:p-10 bg-[var(--surface)]">
@@ -736,7 +741,7 @@ const App: React.FC = () => {
                   )}
 
                   {phase === GamePhase.JOIN && (
-                    <div className="space-y-4 sm:space-y-6">
+                    <div className={entryMode === 'create' ? 'space-y-3 sm:space-y-4' : 'space-y-4 sm:space-y-6'}>
                       <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface-muted)] p-1 flex">
                         <button
                           type="button"
@@ -780,126 +785,145 @@ const App: React.FC = () => {
                           />
                         </div>
                       ) : (
-                        <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface-soft)] p-4 space-y-3 sm:space-y-4">
-                          <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">
+                        <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface-soft)] p-3 space-y-3">
+                          <div className="flex items-center justify-between gap-2 text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.3em] text-[color:var(--ink-faint)]">
                             <span>Postavke sobe</span>
-                            <span className="text-[color:var(--ink-soft)]">Host</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-[color:var(--ink-muted)]">Broj Mafijasa</span>
                             <div className="flex items-center gap-2">
+                              <span className="text-[color:var(--ink-soft)]">Host</span>
                               <button
                                 type="button"
-                                onClick={() => handleDraftMafiaChange(-1)}
-                                className="h-9 w-9 rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] text-sm font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
+                                onClick={() => setShowDraftCustomRoles((prev) => !prev)}
+                                className="rounded-lg border border-[color:var(--line)] bg-[var(--surface-strong)] px-2 py-1 text-[9px] tracking-[0.16em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
                               >
-                                -
-                              </button>
-                              <span className="w-8 text-center font-semibold text-[color:var(--ink)]">{draftSettings.mafiaCount}</span>
-                              <button
-                                type="button"
-                                onClick={() => handleDraftMafiaChange(1)}
-                                className="h-9 w-9 rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] text-sm font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
-                              >
-                                +
+                                {showDraftCustomRoles
+                                  ? 'Sakrij uloge'
+                                  : `Uloge${draftSettings.customRoles.length ? ` (${draftSettings.customRoles.length})` : ''}`}
                               </button>
                             </div>
                           </div>
-                          <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-3 space-y-3">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-[color:var(--ink-muted)]">Dama</span>
-                              <button
-                                type="button"
-                                onClick={toggleDraftLady}
-                                aria-pressed={draftSettings.lady}
-                                className={`relative inline-flex h-7 w-12 items-center rounded-full transition ${
-                                  draftSettings.lady
-                                    ? 'bg-red-600'
-                                    : 'bg-[var(--surface)] border border-[color:var(--line)]'
-                                }`}
-                              >
-                                <span
-                                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
-                                    draftSettings.lady ? 'translate-x-6' : 'translate-x-1'
-                                  }`}
-                                ></span>
-                              </button>
-                            </div>
-                            <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--ink-faint)]">
-                              {draftSettings.lady ? 'U igri' : 'Iskljucena'}
-                            </p>
-                          </div>
-                          <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-3 space-y-3">
-                            <p className="text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Dodatne uloge</p>
-                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                              <input
-                                className="flex-1 rounded-xl border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2 text-xs text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
-                                placeholder="Naziv uloge"
-                                value={draftCustomRoleName}
-                                onChange={(event) => setDraftCustomRoleName(event.target.value)}
-                              />
-                              <div className="flex items-center gap-1 self-start sm:self-auto">
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-2.5">
+                              <p className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--ink-faint)]">Mafijasi</p>
+                              <div className="mt-2 flex items-center justify-between">
                                 <button
                                   type="button"
-                                  onClick={() => setDraftCustomRoleCount((prev) => clampCustomRoleCount(prev - 1))}
+                                  onClick={() => handleDraftMafiaChange(-1)}
                                   className="h-8 w-8 rounded-lg border border-[color:var(--line)] bg-[var(--surface)] text-xs font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
                                 >
                                   -
                                 </button>
-                                <span className="w-6 text-center text-xs font-semibold text-[color:var(--ink)]">{draftCustomRoleCount}</span>
+                                <span className="w-7 text-center text-sm font-semibold text-[color:var(--ink)]">{draftSettings.mafiaCount}</span>
                                 <button
                                   type="button"
-                                  onClick={() => setDraftCustomRoleCount((prev) => clampCustomRoleCount(prev + 1))}
+                                  onClick={() => handleDraftMafiaChange(1)}
                                   className="h-8 w-8 rounded-lg border border-[color:var(--line)] bg-[var(--surface)] text-xs font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
                                 >
                                   +
                                 </button>
                               </div>
-                              <button
-                                type="button"
-                                onClick={handleAddDraftCustomRole}
-                                className="w-full rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] sm:w-auto sm:tracking-[0.3em]"
-                              >
-                                Dodaj
-                              </button>
                             </div>
-                            {draftSettings.customRoles.length > 0 && (
-                              <div className="space-y-2">
-                                {draftSettings.customRoles.map((role, index) => (
-                                  <div
-                                    key={`${role.name}-${index}`}
-                                    className="flex min-w-0 flex-col gap-2 rounded-xl border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
-                                  >
-                                    <span className="min-w-0 break-words text-sm font-semibold text-[color:var(--ink)]">{role.name}</span>
-                                    <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                                      <button
-                                        type="button"
-                                        onClick={() => handleDraftCustomRoleCountChange(index, -1)}
-                                        className="h-7 w-7 rounded-lg border border-[color:var(--line)] bg-[var(--surface)] text-[10px] font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
-                                      >
-                                        -
-                                      </button>
-                                      <span className="w-5 text-center text-[10px] font-semibold text-[color:var(--ink)]">{role.count}</span>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleDraftCustomRoleCountChange(index, 1)}
-                                        className="h-7 w-7 rounded-lg border border-[color:var(--line)] bg-[var(--surface)] text-[10px] font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
-                                      >
-                                        +
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleRemoveDraftCustomRole(index)}
-                                        className="rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-2 py-1 text-[9px] uppercase tracking-[0.2em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] sm:tracking-[0.3em]"
-                                      >
-                                        Ukloni
-                                      </button>
-                                    </div>
-                                  </div>
-                                ))}
+
+                            <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-2.5">
+                              <div className="flex items-center justify-between">
+                                <p className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--ink-faint)]">Dama</p>
+                                <button
+                                  type="button"
+                                  onClick={toggleDraftLady}
+                                  aria-pressed={draftSettings.lady}
+                                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                                    draftSettings.lady
+                                      ? 'bg-red-600'
+                                      : 'bg-[var(--surface)] border border-[color:var(--line)]'
+                                  }`}
+                                >
+                                  <span
+                                    className={`inline-block h-[18px] w-[18px] transform rounded-full bg-white shadow transition ${
+                                      draftSettings.lady ? 'translate-x-[22px]' : 'translate-x-1'
+                                    }`}
+                                  ></span>
+                                </button>
                               </div>
-                            )}
+                              <p className="mt-2 text-[9px] uppercase tracking-[0.16em] text-[color:var(--ink-faint)]">
+                                {draftSettings.lady ? 'U igri' : 'Iskljucena'}
+                              </p>
+                            </div>
                           </div>
+
+                          {showDraftCustomRoles && (
+                            <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-2.5 space-y-2.5">
+                              <p className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--ink-faint)]">Dodatne uloge</p>
+                              <div className="grid grid-cols-[1fr,auto] gap-2">
+                                <input
+                                  className="min-w-0 rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-2.5 py-2 text-xs text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
+                                  placeholder="Naziv uloge"
+                                  value={draftCustomRoleName}
+                                  onChange={(event) => setDraftCustomRoleName(event.target.value)}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={handleAddDraftCustomRole}
+                                  className="rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-2.5 py-2 text-[9px] uppercase tracking-[0.16em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
+                                >
+                                  Dodaj
+                                </button>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setDraftCustomRoleCount((prev) => clampCustomRoleCount(prev - 1))}
+                                  className="h-7 w-7 rounded-lg border border-[color:var(--line)] bg-[var(--surface)] text-[10px] font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
+                                >
+                                  -
+                                </button>
+                                <span className="w-6 text-center text-[10px] font-semibold text-[color:var(--ink)]">{draftCustomRoleCount}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setDraftCustomRoleCount((prev) => clampCustomRoleCount(prev + 1))}
+                                  className="h-7 w-7 rounded-lg border border-[color:var(--line)] bg-[var(--surface)] text-[10px] font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
+                                >
+                                  +
+                                </button>
+                              </div>
+
+                              {draftSettings.customRoles.length > 0 && (
+                                <div className="space-y-1.5">
+                                  {draftSettings.customRoles.map((role, index) => (
+                                    <div
+                                      key={`${role.name}-${index}`}
+                                      className="flex min-w-0 items-center justify-between gap-2 rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-2 py-1.5"
+                                    >
+                                      <span className="min-w-0 flex-1 truncate text-xs font-semibold text-[color:var(--ink)]">{role.name}</span>
+                                      <div className="flex items-center gap-1">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleDraftCustomRoleCountChange(index, -1)}
+                                          className="h-6 w-6 rounded-md border border-[color:var(--line)] bg-[var(--surface)] text-[10px] font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
+                                        >
+                                          -
+                                        </button>
+                                        <span className="w-4 text-center text-[10px] font-semibold text-[color:var(--ink)]">{role.count}</span>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleDraftCustomRoleCountChange(index, 1)}
+                                          className="h-6 w-6 rounded-md border border-[color:var(--line)] bg-[var(--surface)] text-[10px] font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
+                                        >
+                                          +
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRemoveDraftCustomRole(index)}
+                                          className="rounded-md border border-[color:var(--line)] bg-[var(--surface)] px-1.5 py-1 text-[8px] uppercase tracking-[0.16em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
+                                        >
+                                          X
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )}
 

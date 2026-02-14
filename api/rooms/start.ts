@@ -64,8 +64,8 @@ export default async function handler(req: any, res: any) {
     .eq('room_id', room.id)
     .order('created_at', { ascending: true });
 
-  if (playersError || !players || players.length < 4) {
-    return toJson(res, 400, { error: 'Potrebno je bar 4 igraca.' });
+  if (playersError || !players || players.length < 2) {
+    return toJson(res, 400, { error: 'Potrebno je bar 2 igraca.' });
   }
 
   const narrator = players[Math.floor(Math.random() * players.length)];
@@ -76,25 +76,22 @@ export default async function handler(req: any, res: any) {
   }
 
   const settings = sanitizeSettings(room.settings);
-  const customRoles = settings.customRoles ?? [];
-  const customCount = customRoles.reduce((sum, role) => sum + role.count, 0);
-  const mandatoryCount = 2 + (settings.lady ? 1 : 0) + customCount;
+  const specialRoles: string[] = [Role.DOCTOR, Role.DETECTIVE];
+  if (settings.lady) specialRoles.push(Role.LADY);
+  (settings.customRoles ?? []).forEach((role) => {
+    for (let i = 0; i < role.count; i += 1) specialRoles.push(role.name);
+  });
 
-  if (participants.length < mandatoryCount + 1) {
-    return toJson(res, 400, { error: 'Nema dovoljno igraca za sve obavezne uloge.' });
-  }
-
-  const maxMafia = Math.max(1, participants.length - mandatoryCount);
+  // Testing-friendly: allow small rooms and fill roles as much as possible.
+  const maxMafia = Math.max(1, participants.length - 1);
   const mafiaCount = Math.min(Math.max(settings.mafiaCount, 1), maxMafia);
 
   const roles: string[] = [];
   for (let i = 0; i < mafiaCount; i += 1) roles.push(Role.MAFIA);
-  roles.push(Role.DOCTOR);
-  roles.push(Role.DETECTIVE);
-  if (settings.lady) roles.push(Role.LADY);
-  customRoles.forEach((role) => {
-    for (let i = 0; i < role.count; i += 1) roles.push(role.name);
-  });
+  for (const role of specialRoles) {
+    if (roles.length >= participants.length) break;
+    roles.push(role);
+  }
   while (roles.length < participants.length) roles.push(Role.VILLAGER);
 
   const shuffledRoles = shuffle(roles);
