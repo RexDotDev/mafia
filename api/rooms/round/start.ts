@@ -51,6 +51,9 @@ export default async function handler(req: any, res: any) {
 
   const settings = sanitizeSettings(room.settings);
   const currentState = normalizeRoundState(settings.roundState);
+  if (currentState.gameResult) {
+    return toJson(res, 409, { error: 'Igra je zavrsena. Pokreni novu podelu uloga.' });
+  }
   if (currentState.phase === 'night') {
     return toJson(res, 409, { error: 'Nocna runda je vec u toku.' });
   }
@@ -67,6 +70,7 @@ export default async function handler(req: any, res: any) {
     votes: [],
     lastResult: null,
     lastVoteSummary: null,
+    gameResult: null,
   };
   nextState = appendRoundEvent(nextState, nextRound, 'round_started', `Runda ${nextRound} je pokrenuta.`);
 

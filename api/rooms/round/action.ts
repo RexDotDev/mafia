@@ -80,6 +80,10 @@ export default async function handler(req: any, res: any) {
     return toJson(res, 400, { error: 'Missing targetId' });
   }
 
+  if (roundState.gameResult) {
+    return toJson(res, 409, { error: 'Igra je zavrsena.' });
+  }
+
   if (roundState.phase !== 'night') {
     return toJson(res, 409, { error: 'Nocna runda nije aktivna.' });
   }

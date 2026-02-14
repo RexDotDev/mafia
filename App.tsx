@@ -163,6 +163,23 @@ const normalizeRoundState = (raw: any): RoundState | null => {
               : [],
           }
         : null,
+    gameResult:
+      raw?.gameResult &&
+      typeof raw.gameResult === 'object' &&
+      (raw.gameResult.winner === 'city' || raw.gameResult.winner === 'mafia')
+        ? {
+            winner: raw.gameResult.winner,
+            message: typeof raw.gameResult.message === 'string' ? raw.gameResult.message : '',
+            round:
+              typeof raw.gameResult.round === 'number'
+                ? Math.max(0, Math.floor(raw.gameResult.round))
+                : 0,
+            createdAt:
+              typeof raw.gameResult.createdAt === 'string'
+                ? raw.gameResult.createdAt
+                : '',
+          }
+        : null,
   };
 };
 
@@ -193,6 +210,8 @@ const App: React.FC = () => {
   const [graveyardDraftMessage, setGraveyardDraftMessage] = useState('');
   const [showVoteSummaryModal, setShowVoteSummaryModal] = useState(false);
   const [dismissedVoteSummaryKey, setDismissedVoteSummaryKey] = useState('');
+  const [showGameResultModal, setShowGameResultModal] = useState(false);
+  const [dismissedGameResultKey, setDismissedGameResultKey] = useState('');
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
   const [hasRestoredSession, setHasRestoredSession] = useState(false);
   const [theme, setTheme] = useState<ThemeMode>(() => {
@@ -253,8 +272,7 @@ const App: React.FC = () => {
     const currentPlayer = players.find((player) => player.clientId === clientId);
     const canSeeGraveyard =
       !!currentPlayer &&
-      (currentPlayer.isNarrator ||
-        (!!normalizedRoundState && normalizedRoundState.eliminatedPlayerIds.includes(currentPlayer.id)));
+      (!!normalizedRoundState && normalizedRoundState.eliminatedPlayerIds.includes(currentPlayer.id));
 
     setRoom({
       id: roomRow.id,
@@ -664,6 +682,7 @@ const App: React.FC = () => {
   );
 
   const lastVoteSummary = roundState?.lastVoteSummary ?? null;
+  const gameResult = roundState?.gameResult ?? null;
   const voteSummaryModalKey = useMemo(() => {
     if (!roundState || !lastVoteSummary) return '';
     const countsKey = lastVoteSummary.voteCounts
@@ -671,6 +690,10 @@ const App: React.FC = () => {
       .join('|');
     return `${roundState.round}:${lastVoteSummary.completedVoters}:${lastVoteSummary.totalVoters}:${lastVoteSummary.eliminatedPlayerId || 'none'}:${countsKey}`;
   }, [roundState, lastVoteSummary]);
+  const gameResultModalKey = useMemo(() => {
+    if (!gameResult) return '';
+    return `${gameResult.winner}:${gameResult.round}:${gameResult.createdAt}:${gameResult.message}`;
+  }, [gameResult]);
 
   const availableNightTargets = useMemo(() => {
     if (!me || !myNightActionType) return [];
@@ -702,6 +725,16 @@ const App: React.FC = () => {
       setShowVoteSummaryModal(true);
     }
   }, [voteSummaryModalKey, dismissedVoteSummaryKey, roundState?.phase]);
+
+  useEffect(() => {
+    if (!gameResultModalKey) {
+      setShowGameResultModal(false);
+      return;
+    }
+    if (dismissedGameResultKey !== gameResultModalKey) {
+      setShowGameResultModal(true);
+    }
+  }, [gameResultModalKey, dismissedGameResultKey]);
 
   const roundInspectorPreview = useMemo(() => {
     const action = roundState?.actions.find((item) => item.type === 'detective_check');
@@ -861,6 +894,8 @@ const App: React.FC = () => {
     setGraveyardDraftMessage('');
     setShowVoteSummaryModal(false);
     setDismissedVoteSummaryKey('');
+    setShowGameResultModal(false);
+    setDismissedGameResultKey('');
 
     if (!code) return;
     try {
@@ -878,7 +913,7 @@ const App: React.FC = () => {
   };
 
   const renderVoteSummaryModal = () => {
-    if (room?.status !== 'finished' || !lastVoteSummary || !showVoteSummaryModal) return null;
+    if (room?.status !== 'finished' || !lastVoteSummary || !showVoteSummaryModal || !!gameResult) return null;
 
     return (
       <div
@@ -924,6 +959,42 @@ const App: React.FC = () => {
     );
   };
 
+  const closeGameResultModal = () => {
+    if (gameResultModalKey) {
+      setDismissedGameResultKey(gameResultModalKey);
+    }
+    setShowGameResultModal(false);
+  };
+
+  const renderGameResultModal = () => {
+    if (room?.status !== 'finished' || !gameResult || !showGameResultModal) return null;
+
+    const title = gameResult.winner === 'city' ? 'Grad je pobedio' : 'Mafija je pobedila';
+    return (
+      <div
+        className="fixed inset-0 z-[90] flex items-center justify-center bg-black/65 px-4 py-6"
+        onClick={closeGameResultModal}
+      >
+        <div
+          className="w-full max-w-md rounded-3xl border border-[color:var(--line)] bg-[var(--surface)] p-6 text-center shadow-2xl"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <p className="text-[10px] uppercase tracking-[0.24em] text-[color:var(--ink-faint)]">Kraj igre</p>
+          <h3 className="mt-2 title-font text-3xl text-[color:var(--ink)]">{title}</h3>
+          <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
+            {gameResult.message || title}
+          </p>
+          <button
+            onClick={closeGameResultModal}
+            className="mt-5 w-full rounded-xl bg-[var(--ink)] py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90"
+          >
+            U redu
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   const narratorPanel = (
     <div className="text-center space-y-5 sm:space-y-6 py-2">
       <div>
@@ -953,8 +1024,13 @@ const App: React.FC = () => {
           <div className="text-xs text-[color:var(--ink-muted)]">
             Zivi: {alivePlayers.length ? alivePlayers.map((player) => player.name).join(', ') : 'nema'}
           </div>
+          {gameResult && (
+            <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-xs text-[color:var(--ink-muted)]">
+              Igra je zavrsena: {gameResult.winner === 'city' ? 'Grad je pobedio.' : 'Mafija je pobedila.'}
+            </div>
+          )}
 
-          {(roundState?.phase === 'idle' || !roundState) && (
+          {!gameResult && (roundState?.phase === 'idle' || !roundState) && (
             <button
               onClick={handleStartRound}
               disabled={isBusy}
@@ -964,7 +1040,7 @@ const App: React.FC = () => {
             </button>
           )}
 
-          {roundState?.phase === 'night' && (
+          {!gameResult && roundState?.phase === 'night' && (
             <button
               onClick={handleResolveRound}
               disabled={isBusy}
@@ -974,7 +1050,7 @@ const App: React.FC = () => {
             </button>
           )}
 
-          {roundState?.phase === 'voting' && (
+          {!gameResult && roundState?.phase === 'voting' && (
             <div className="space-y-2">
               <div className="text-xs text-[color:var(--ink-muted)]">
                 Glasalo: {votedPlayers.length}/{alivePlayers.length}
@@ -1054,27 +1130,6 @@ const App: React.FC = () => {
           </div>
         </div>
       ) : null}
-
-      {room?.status === 'finished' && (
-        <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-3 text-left">
-          <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Groblje chat</p>
-          <div className="h-72 overflow-y-auto space-y-1.5 pr-1 rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-2.5">
-            {graveyardMessages.length ? (
-              [...graveyardMessages].reverse().map((message) => (
-                <div
-                  key={message.id}
-                  className="rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-2.5 py-2 text-xs text-[color:var(--ink-muted)]"
-                >
-                  <span className="font-semibold text-[color:var(--ink)]">{message.senderName}:</span>{' '}
-                  {message.message}
-                </div>
-              ))
-            ) : (
-              <p className="text-xs text-[color:var(--ink-soft)]">Nema poruka u groblju.</p>
-            )}
-          </div>
-        </div>
-      )}
 
       <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-3">
         <p className="text-[10px] uppercase tracking-[0.22em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Uloge igraca</p>
@@ -1745,6 +1800,11 @@ const App: React.FC = () => {
                             <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
                               Chat soba za eliminisane igrace.
                             </p>
+                            {gameResult && (
+                              <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
+                                Igra je zavrsena: {gameResult.winner === 'city' ? 'Grad je pobedio.' : 'Mafija je pobedila.'}
+                              </p>
+                            )}
                           </div>
                           <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 text-left space-y-3">
                             <div className="h-[50vh] min-h-[300px] max-h-[560px] overflow-y-auto space-y-1.5 rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-2.5">
@@ -1778,6 +1838,13 @@ const App: React.FC = () => {
                               </button>
                             </div>
                           </div>
+                        </div>
+                      ) : gameResult ? (
+                        <div>
+                          <h2 className="title-font text-3xl text-[color:var(--ink)]">Igra je zavrsena</h2>
+                          <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
+                            {gameResult.winner === 'city' ? 'Grad je pobedio.' : 'Mafija je pobedila.'}
+                          </p>
                         </div>
                       ) : roundState?.phase === 'night' && myNightActionType ? (
                         <div className="space-y-4">
@@ -1902,6 +1969,7 @@ const App: React.FC = () => {
             </div>
           </div>
 
+          {renderGameResultModal()}
           {renderVoteSummaryModal()}
 
           <footer className="mt-5 sm:mt-8 flex items-center justify-center gap-2 text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.4em] text-[color:var(--ink-soft)]">

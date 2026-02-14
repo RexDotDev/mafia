@@ -41,7 +41,8 @@ export function sanitizeSettings(input: any) {
     normalizedRoundState.graveyardMessages.length > 0 ||
     normalizedRoundState.phase !== 'idle' ||
     normalizedRoundState.lastResult !== null ||
-    normalizedRoundState.lastVoteSummary !== null;
+    normalizedRoundState.lastVoteSummary !== null ||
+    normalizedRoundState.gameResult !== null;
 
   return {
     mafiaCount: typeof input?.mafiaCount === 'number' ? Math.max(1, input.mafiaCount) : DEFAULT_SETTINGS.mafiaCount,

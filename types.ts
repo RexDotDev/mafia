@@ -98,6 +98,15 @@ export interface RoundVoteSummary {
   }>;
 }
 
+export type WinnerTeam = 'city' | 'mafia';
+
+export interface RoundGameResult {
+  winner: WinnerTeam;
+  message: string;
+  round: number;
+  createdAt: string;
+}
+
 export interface GraveyardMessage {
   id: string;
   senderId: string;
@@ -115,6 +124,7 @@ export interface RoundState {
   eliminatedPlayerIds: string[];
   lastResult: RoundResult | null;
   lastVoteSummary: RoundVoteSummary | null;
+  gameResult: RoundGameResult | null;
   graveyardMessages: GraveyardMessage[];
 }
 

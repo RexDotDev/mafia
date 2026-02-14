@@ -1,9 +1,18 @@
 import { supabaseAdmin } from '../../_shared/supabase.js';
 import { appendRoundEvent, normalizeRoundState } from '../../_shared/roundState.js';
 import { normalizeRoomCode, sanitizeSettings } from '../../_shared/roomUtils.js';
+import { Role } from '../../../types.js';
 
 const toJson = (res: any, status: number, payload: any) => {
   res.status(status).json(payload);
+};
+
+const evaluateWinner = (alivePlayers: any[]) => {
+  const mafiaAlive = alivePlayers.filter((player) => player.role === Role.MAFIA).length;
+  const cityAlive = alivePlayers.length - mafiaAlive;
+  if (mafiaAlive === 0) return 'city';
+  if (mafiaAlive >= cityAlive) return 'mafia';
+  return null;
 };
 
 export default async function handler(req: any, res: any) {
@@ -52,13 +61,16 @@ export default async function handler(req: any, res: any) {
 
   const settings = sanitizeSettings(room.settings);
   const roundState = normalizeRoundState(settings.roundState);
+  if (roundState.gameResult) {
+    return toJson(res, 409, { error: 'Igra je vec zavrsena.' });
+  }
   if (roundState.phase !== 'voting') {
     return toJson(res, 409, { error: 'Glasanje nije aktivno.' });
   }
 
   const { data: players, error: playersError } = await supabaseAdmin
     .from('players')
-    .select('id, name, is_narrator')
+    .select('id, name, role, is_narrator')
     .eq('room_id', room.id);
 
   if (playersError || !players) {
@@ -142,8 +154,12 @@ export default async function handler(req: any, res: any) {
   } else if (topVotes > 0) {
     eventMessage = `Glasanje je nereseno (${topVotes} glas${topVotes === 1 ? '' : 'a'}). Niko nije izbacen.`;
   }
+  const aliveAfterVote = players.filter(
+    (player: any) => !player.is_narrator && !nextEliminated.includes(player.id),
+  );
+  const winner = evaluateWinner(aliveAfterVote);
 
-  const nextState = appendRoundEvent(
+  let nextState = appendRoundEvent(
     {
       ...roundState,
       phase: 'idle',
@@ -156,11 +172,28 @@ export default async function handler(req: any, res: any) {
         eliminatedPlayerName: eliminated?.playerName ?? null,
         voteCounts: sortedCounts,
       },
+      gameResult: winner
+        ? {
+            winner,
+            message: winner === 'city' ? 'Grad je pobedio.' : 'Mafija je pobedila.',
+            round: roundState.round,
+            createdAt: new Date().toISOString(),
+          }
+        : null,
     },
     roundState.round,
     'vote_elimination',
     eventMessage,
   );
+
+  if (winner) {
+    nextState = appendRoundEvent(
+      nextState,
+      roundState.round,
+      'note',
+      winner === 'city' ? 'Kraj igre: grad je pobedio.' : 'Kraj igre: mafija je pobedila.',
+    );
+  }
 
   const { error: updateError } = await supabaseAdmin
     .from('rooms')

@@ -36,6 +36,14 @@ const pickMafiaTarget = (actions: any[]) => {
   })[0]?.action ?? null;
 };
 
+const evaluateWinner = (alivePlayers: any[]) => {
+  const mafiaAlive = alivePlayers.filter((player) => player.role === Role.MAFIA).length;
+  const cityAlive = alivePlayers.length - mafiaAlive;
+  if (mafiaAlive === 0) return 'city';
+  if (mafiaAlive >= cityAlive) return 'mafia';
+  return null;
+};
+
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
     return toJson(res, 405, { error: 'Method not allowed' });
@@ -86,6 +94,9 @@ export default async function handler(req: any, res: any) {
 
   const settings = sanitizeSettings(room.settings);
   const roundState = normalizeRoundState(settings.roundState);
+  if (roundState.gameResult) {
+    return toJson(res, 409, { error: 'Igra je vec zavrsena.' });
+  }
   if (roundState.phase !== 'night') {
     return toJson(res, 409, { error: 'Nocna runda nije aktivna.' });
   }
@@ -158,7 +169,8 @@ export default async function handler(req: any, res: any) {
   const aliveAfterNight = activePlayers.filter(
     (player: any) => !nextEliminated.includes(player.id),
   );
-  const shouldOpenVoting = aliveAfterNight.length > 0;
+  const winner = evaluateWinner(aliveAfterNight);
+  const shouldOpenVoting = aliveAfterNight.length > 0 && !winner;
 
   let nextState = {
     ...roundState,
@@ -177,15 +189,15 @@ export default async function handler(req: any, res: any) {
       inspectorIsMafia,
       mutedPlayerId,
     },
-    lastVoteSummary: shouldOpenVoting
-      ? null
-      : {
-          totalVoters: 0,
-          completedVoters: 0,
-          eliminatedPlayerId: null,
-          eliminatedPlayerName: null,
-          voteCounts: [],
-        },
+    lastVoteSummary: null,
+    gameResult: winner
+      ? {
+          winner,
+          message: winner === 'city' ? 'Grad je pobedio.' : 'Mafija je pobedila.',
+          round: roundState.round,
+          createdAt: new Date().toISOString(),
+        }
+      : null,
   };
 
   if (latestLadyAction) {
@@ -232,12 +244,21 @@ export default async function handler(req: any, res: any) {
     nextState = appendRoundEvent(nextState, roundState.round, 'mafia_kill', 'Mafija nije izvrsila ubistvo.');
   }
 
-  if (!shouldOpenVoting) {
+  if (!shouldOpenVoting && !winner) {
     nextState = appendRoundEvent(
       nextState,
       roundState.round,
       'vote_elimination',
       'Nema zivih igraca za glasanje. Runda je automatski zavrsena.',
+    );
+  }
+
+  if (winner) {
+    nextState = appendRoundEvent(
+      nextState,
+      roundState.round,
+      'note',
+      winner === 'city' ? 'Kraj igre: grad je pobedio.' : 'Kraj igre: mafija je pobedila.',
     );
   }
 

@@ -40,6 +40,7 @@ export const createDefaultRoundState = () => ({
   eliminatedPlayerIds: [] as string[],
   lastResult: null as any,
   lastVoteSummary: null as any,
+  gameResult: null as any,
   graveyardMessages: [] as any[],
 });
 
@@ -135,6 +136,17 @@ export const normalizeRoundState = (input: any) => {
         }
       : null;
 
+  const rawGameResult = input.gameResult;
+  const gameResult =
+    rawGameResult && typeof rawGameResult === 'object'
+      ? {
+          winner: rawGameResult.winner === 'city' || rawGameResult.winner === 'mafia' ? rawGameResult.winner : null,
+          message: asString(rawGameResult.message),
+          round: asSafeNumber(rawGameResult.round),
+          createdAt: asString(rawGameResult.createdAt) || nowIso(),
+        }
+      : null;
+
   return {
     round: typeof input.round === 'number' ? Math.max(0, input.round) : 0,
     phase: allowedPhases.has(input.phase) ? input.phase : 'idle',
@@ -144,6 +156,7 @@ export const normalizeRoundState = (input: any) => {
     eliminatedPlayerIds: asStringArray(input.eliminatedPlayerIds),
     lastResult,
     lastVoteSummary,
+    gameResult: gameResult?.winner ? gameResult : null,
     graveyardMessages,
   };
 };
