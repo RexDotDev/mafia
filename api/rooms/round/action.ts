@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '../../_shared/supabase.js';
-import { getActionTypeForRole, normalizeRoundState } from '../../_shared/roundState.js';
+import { appendGraveyardMessage, getActionTypeForRole, normalizeRoundState } from '../../_shared/roundState.js';
 import { normalizeRoomCode, sanitizeSettings } from '../../_shared/roomUtils.js';
 
 const toJson = (res: any, status: number, payload: any) => {
@@ -15,9 +15,10 @@ export default async function handler(req: any, res: any) {
   const roomCode = String(body?.roomCode || '').trim();
   const clientId = String(body?.clientId || '').trim();
   const targetId = String(body?.targetId || '').trim();
+  const message = String(body?.message || '').trim();
 
-  if (!roomCode || !clientId || !targetId) {
-    return toJson(res, 400, { error: 'Missing roomCode, clientId, or targetId' });
+  if (!roomCode || !clientId) {
+    return toJson(res, 400, { error: 'Missing roomCode or clientId' });
   }
 
   const code = normalizeRoomCode(roomCode);
@@ -37,9 +38,6 @@ export default async function handler(req: any, res: any) {
 
   const settings = sanitizeSettings(room.settings);
   const roundState = normalizeRoundState(settings.roundState);
-  if (roundState.phase !== 'night') {
-    return toJson(res, 409, { error: 'Nocna runda nije aktivna.' });
-  }
 
   const { data: actor, error: actorError } = await supabaseAdmin
     .from('players')
@@ -50,6 +48,40 @@ export default async function handler(req: any, res: any) {
 
   if (actorError || !actor) {
     return toJson(res, 404, { error: 'Player not found' });
+  }
+
+  if (message) {
+    if (actor.is_narrator) {
+      return toJson(res, 403, { error: 'Narator ima samo pregled groblja.' });
+    }
+    if (!roundState.eliminatedPlayerIds.includes(actor.id)) {
+      return toJson(res, 403, { error: 'Samo eliminisani igraci mogu pisati u groblju.' });
+    }
+
+    const nextRoundState = appendGraveyardMessage(
+      roundState,
+      actor.id,
+      actor.name,
+      message.slice(0, 800),
+    );
+    const { error: updateMessageError } = await supabaseAdmin
+      .from('rooms')
+      .update({ settings: { ...settings, roundState: nextRoundState } })
+      .eq('id', room.id);
+
+    if (updateMessageError) {
+      return toJson(res, 500, { error: 'Failed to send graveyard message' });
+    }
+
+    return toJson(res, 200, { data: { ok: true } });
+  }
+
+  if (!targetId) {
+    return toJson(res, 400, { error: 'Missing targetId' });
+  }
+
+  if (roundState.phase !== 'night') {
+    return toJson(res, 409, { error: 'Nocna runda nije aktivna.' });
   }
 
   if (actor.is_narrator) {

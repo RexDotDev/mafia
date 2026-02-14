@@ -104,5 +104,5 @@ export async function sendGraveyardMessage(payload: {
   clientId: string;
   message: string;
 }): Promise<{ ok: true }> {
-  return postJson<{ ok: true }>('/api/rooms/graveyard/message', payload);
+  return postJson<{ ok: true }>('/api/rooms/round/action', payload);
 }
