@@ -526,7 +526,7 @@ const App: React.FC = () => {
         )}
       </div>
       <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-3">
-        <p className="text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-faint)]">Uloge igraca</p>
+        <p className="text-[10px] uppercase tracking-[0.22em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Uloge igraca</p>
         {players
           .filter((player) => !player.isNarrator)
           .map((player) => (
@@ -546,14 +546,14 @@ const App: React.FC = () => {
               return (
             <div
               key={player.id}
-              className="flex items-center justify-between rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2"
+              className="flex min-w-0 flex-col items-start gap-2 rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
             >
-              <span className={`text-sm font-bold ${nameTone}`}>{player.name}</span>
-              <span className="flex items-center gap-2 text-[10px] uppercase tracking-[0.3em]">
+              <span className={`w-full min-w-0 break-words text-left text-sm font-bold ${nameTone}`}>{player.name}</span>
+              <span className="flex w-full items-center gap-2 text-[10px] uppercase tracking-[0.2em] sm:w-auto sm:tracking-[0.3em]">
                 <span className="text-base leading-none text-[color:var(--ink)]">
                   {getRoleIcon(player.role || Role.VILLAGER)}
                 </span>
-                <span>{player.role || 'Uloga'}</span>
+                <span className="break-words">{player.role || 'Uloga'}</span>
               </span>
             </div>
               );
@@ -561,15 +561,15 @@ const App: React.FC = () => {
           ))}
       </div>
       <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2">
-        <p className="text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-faint)]">Potvrde uloga</p>
+        <p className="text-[10px] uppercase tracking-[0.22em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Potvrde uloga</p>
         {players
           .filter((player) => !player.isNarrator)
           .map((player) => (
             <div
               key={player.id}
-              className="text-[10px] uppercase tracking-[0.35em] flex justify-between items-center"
+              className="flex items-center justify-between gap-3 text-[10px] uppercase tracking-[0.16em] sm:tracking-[0.35em]"
             >
-              <span className={`font-semibold ${player.hasConfirmed ? 'text-emerald-600' : 'text-[color:var(--ink-soft)]'}`}>
+              <span className={`min-w-0 flex-1 break-words text-left font-semibold ${player.hasConfirmed ? 'text-emerald-600' : 'text-[color:var(--ink-soft)]'}`}>
                 {player.name}
               </span>
               {player.hasConfirmed ? (
@@ -584,14 +584,14 @@ const App: React.FC = () => {
         <button
           onClick={handleResetGame}
           disabled={isBusy}
-          className="w-full rounded-2xl bg-[var(--ink)] py-3 text-[11px] font-semibold uppercase tracking-[0.35em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
+          className="w-full rounded-2xl bg-[var(--ink)] py-3 text-[11px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
         >
           Nova podela uloga
         </button>
       )}
       <button
         onClick={handleLeaveRoom}
-        className="w-full rounded-2xl border border-red-500/40 bg-red-600 py-3 text-[10px] font-semibold uppercase tracking-[0.35em] text-white hover:bg-red-500 transition"
+        className="w-full rounded-2xl border border-red-500/40 bg-red-600 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-white hover:bg-red-500 transition"
       >
         Napusti sobu
       </button>
@@ -639,7 +639,7 @@ const App: React.FC = () => {
           <div className="w-full max-w-md rounded-[28px] border border-[color:var(--line)] bg-[var(--surface)] px-6 py-8 sm:px-8 sm:py-10 relative">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.4em] text-[color:var(--ink-faint)]">Priprema</p>
+                <p className="text-[11px] uppercase tracking-[0.24em] sm:tracking-[0.4em] text-[color:var(--ink-faint)]">Priprema</p>
                   <div className="flex items-center gap-2">
                     <img src="/favicon.png" alt="Mafija" className="h-7 w-7 rounded-md" />
                     <h1 className="title-font text-3xl text-[color:var(--ink)]">MAFIJA</h1>
@@ -654,7 +654,7 @@ const App: React.FC = () => {
                 <div className="h-2.5 w-2.5 rounded-full bg-red-500 animate-bounce [animation-delay:0.2s]"></div>
                 <div className="h-2.5 w-2.5 rounded-full bg-red-500 animate-bounce [animation-delay:0.4s]"></div>
               </div>
-              <p className="mt-3 text-center text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-faint)]">Ucitavanje...</p>
+              <p className="mt-3 text-center text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Ucitavanje...</p>
             </div>
           </div>
         </div>
@@ -674,10 +674,10 @@ const App: React.FC = () => {
                 <aside className="flex flex-col gap-4 sm:gap-6 bg-[var(--surface-soft)] p-5 sm:p-6 md:p-8 border-b md:border-b-0 md:border-r border-[color:var(--line)]">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-[11px] uppercase tracking-[0.4em] text-[color:var(--ink-faint)]">Nocna igra</p>
+                      <p className="text-[11px] uppercase tracking-[0.24em] sm:tracking-[0.4em] text-[color:var(--ink-faint)]">Nocna igra</p>
                       <div className="flex items-center gap-3">
                         <img src="/favicon.png" alt="Mafija" className="h-8 w-8 md:h-9 md:w-9 rounded-md" />
-                        <h1 className="title-font text-4xl md:text-5xl text-[color:var(--ink)]">MAFIJA</h1>
+                        <h1 className="title-font text-3xl sm:text-4xl md:text-5xl text-[color:var(--ink)]">MAFIJA</h1>
                       </div>
                       <p className="mt-2 text-sm text-[color:var(--ink-muted)]">Diskretan diler uloga za igru uzivo.</p>
                     </div>
@@ -686,13 +686,13 @@ const App: React.FC = () => {
 
                   {roomCode.length === 6 && (
                     <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-4">
-                      <p className="text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-faint)]">Sifra sobe</p>
-                      <div className="mt-3 flex items-center justify-between gap-3">
-                        <span className="font-mono text-xl font-semibold tracking-[0.35em] text-[color:var(--ink)]">{roomCode.toUpperCase()}</span>
+                      <p className="text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Sifra sobe</p>
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-mono text-base font-semibold tracking-[0.2em] text-[color:var(--ink)] sm:text-xl sm:tracking-[0.35em]">{roomCode.toUpperCase()}</span>
                         <button
                           type="button"
                           onClick={handleCopyCode}
-                          className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-[10px] uppercase tracking-[0.3em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] transition"
+                          className="w-full rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] transition sm:w-auto sm:tracking-[0.3em]"
                         >
                           {copyStatus === 'copied' ? 'Kopirano' : copyStatus === 'error' ? 'Greska' : 'Kopiraj'}
                         </button>
@@ -704,7 +704,7 @@ const App: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setRoomCode(generateRoomCode())}
-                      className="w-full rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-4 py-3 text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] transition"
+                      className="w-full rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-4 py-3 text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] transition"
                     >
                       Novi kod
                     </button>
@@ -730,7 +730,7 @@ const App: React.FC = () => {
 
                   {room?.status !== 'waiting' && narrator && (
                     <div className="mb-5 rounded-2xl border border-[color:var(--line)] bg-[var(--surface-soft)] px-4 py-3 text-xs text-[color:var(--ink-muted)]">
-                      <span className="text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-faint)]">Narator</span>
+                      <span className="text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Narator</span>
                       <div className="mt-2 text-sm font-semibold text-[color:var(--ink)]">{narrator.name}</div>
                     </div>
                   )}
@@ -772,7 +772,7 @@ const App: React.FC = () => {
                         <div className="space-y-2">
                           <label className="text-[11px] uppercase tracking-[0.3em] text-[color:var(--ink-faint)]">Sifra sobe</label>
                           <input
-                            className="w-full rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-4 py-3 text-sm uppercase font-mono tracking-[0.35em] text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
+                            className="w-full rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-4 py-3 text-sm uppercase font-mono tracking-[0.22em] sm:tracking-[0.35em] text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
                             placeholder="6 cifara"
                             value={roomCode}
                             onChange={(event) => setRoomCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
@@ -781,7 +781,7 @@ const App: React.FC = () => {
                         </div>
                       ) : (
                         <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface-soft)] p-4 space-y-3 sm:space-y-4">
-                          <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-faint)]">
+                          <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">
                             <span>Postavke sobe</span>
                             <span className="text-[color:var(--ink-soft)]">Host</span>
                           </div>
@@ -830,15 +830,15 @@ const App: React.FC = () => {
                             </p>
                           </div>
                           <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-3 space-y-3">
-                            <p className="text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-faint)]">Dodatne uloge</p>
-                            <div className="flex items-center gap-2">
+                            <p className="text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Dodatne uloge</p>
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                               <input
                                 className="flex-1 rounded-xl border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2 text-xs text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
                                 placeholder="Naziv uloge"
                                 value={draftCustomRoleName}
                                 onChange={(event) => setDraftCustomRoleName(event.target.value)}
                               />
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-1 self-start sm:self-auto">
                                 <button
                                   type="button"
                                   onClick={() => setDraftCustomRoleCount((prev) => clampCustomRoleCount(prev - 1))}
@@ -858,7 +858,7 @@ const App: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={handleAddDraftCustomRole}
-                                className="rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2 text-[10px] uppercase tracking-[0.3em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
+                                className="w-full rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] sm:w-auto sm:tracking-[0.3em]"
                               >
                                 Dodaj
                               </button>
@@ -868,10 +868,10 @@ const App: React.FC = () => {
                                 {draftSettings.customRoles.map((role, index) => (
                                   <div
                                     key={`${role.name}-${index}`}
-                                    className="flex items-center justify-between rounded-xl border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2"
+                                    className="flex min-w-0 flex-col gap-2 rounded-xl border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
                                   >
-                                    <span className="text-sm font-semibold text-[color:var(--ink)]">{role.name}</span>
-                                    <div className="flex items-center gap-2">
+                                    <span className="min-w-0 break-words text-sm font-semibold text-[color:var(--ink)]">{role.name}</span>
+                                    <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                                       <button
                                         type="button"
                                         onClick={() => handleDraftCustomRoleCountChange(index, -1)}
@@ -890,7 +890,7 @@ const App: React.FC = () => {
                                       <button
                                         type="button"
                                         onClick={() => handleRemoveDraftCustomRole(index)}
-                                        className="rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-2 py-1 text-[9px] uppercase tracking-[0.3em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
+                                        className="rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-2 py-1 text-[9px] uppercase tracking-[0.2em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] sm:tracking-[0.3em]"
                                       >
                                         Ukloni
                                       </button>
@@ -906,7 +906,7 @@ const App: React.FC = () => {
                       <button
                         onClick={handleJoin}
                         disabled={isBusy}
-                        className="w-full rounded-2xl bg-red-600 text-white font-semibold py-4 uppercase tracking-[0.3em] text-xs hover:bg-red-500 disabled:opacity-60 transition"
+                        className="w-full rounded-2xl bg-red-600 text-white font-semibold py-4 uppercase tracking-[0.2em] sm:tracking-[0.3em] text-xs hover:bg-red-500 disabled:opacity-60 transition"
                       >
                         {entryMode === 'create' ? 'Kreiraj sobu' : 'Udji u sobu'}
                       </button>
@@ -916,11 +916,11 @@ const App: React.FC = () => {
                   {phase === GamePhase.LOBBY && (
                     <div className="space-y-4 sm:space-y-6">
                       <div className="flex items-center justify-between">
-                        <h2 className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--ink-faint)]">
+                        <h2 className="text-[11px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">
                           Igraci ({players.length})
                         </h2>
                         {me?.isHost && (
-                          <span className="rounded-full bg-[var(--ink)] text-[color:var(--paper)] text-[10px] px-3 py-1 uppercase tracking-[0.3em]">
+                          <span className="rounded-full bg-[var(--ink)] text-[color:var(--paper)] text-[10px] px-3 py-1 uppercase tracking-[0.2em] sm:tracking-[0.3em]">
                             Host
                           </span>
                         )}
@@ -930,9 +930,9 @@ const App: React.FC = () => {
                         {players.map((player) => (
                           <div
                             key={player.id}
-                            className="flex items-center justify-between rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] px-4 py-3"
+                            className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] px-4 py-3"
                           >
-                            <span className="text-sm font-semibold text-[color:var(--ink)]">
+                            <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[color:var(--ink)]">
                               {player.name} {player.clientId === clientId && '(Ti)'}
                             </span>
                             <i className="fas fa-check-circle text-emerald-600 text-xs"></i>
@@ -988,15 +988,15 @@ const App: React.FC = () => {
                             </p>
                           </div>
                           <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface)] p-3 space-y-3">
-                            <p className="text-[10px] uppercase tracking-[0.35em] text-[color:var(--ink-faint)]">Dodatne uloge</p>
-                            <div className="flex items-center gap-2">
+                            <p className="text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Dodatne uloge</p>
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                               <input
                                 className="flex-1 rounded-xl border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2 text-xs text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
                                 placeholder="Naziv uloge"
                                 value={customRoleName}
                                 onChange={(event) => setCustomRoleName(event.target.value)}
                               />
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-1 self-start sm:self-auto">
                                 <button
                                   type="button"
                                   onClick={() => setCustomRoleCount((prev) => clampCustomRoleCount(prev - 1))}
@@ -1019,7 +1019,7 @@ const App: React.FC = () => {
                                 type="button"
                                 onClick={handleAddCustomRole}
                                 disabled={isBusy}
-                                className="rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2 text-[10px] uppercase tracking-[0.3em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] disabled:opacity-60"
+                                className="w-full rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] disabled:opacity-60 sm:w-auto sm:tracking-[0.3em]"
                               >
                                 Dodaj
                               </button>
@@ -1029,10 +1029,10 @@ const App: React.FC = () => {
                                 {settings.customRoles.map((role, index) => (
                                   <div
                                     key={`${role.name}-${index}`}
-                                    className="flex items-center justify-between rounded-xl border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2"
+                                    className="flex min-w-0 flex-col gap-2 rounded-xl border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
                                   >
-                                    <span className="text-sm font-semibold text-[color:var(--ink)]">{role.name}</span>
-                                    <div className="flex items-center gap-2">
+                                    <span className="min-w-0 break-words text-sm font-semibold text-[color:var(--ink)]">{role.name}</span>
+                                    <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                                       <button
                                         type="button"
                                         onClick={() => handleCustomRoleCountChange(index, -1)}
@@ -1054,7 +1054,7 @@ const App: React.FC = () => {
                                         type="button"
                                         onClick={() => handleRemoveCustomRole(index)}
                                         disabled={isBusy}
-                                        className="rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-2 py-1 text-[9px] uppercase tracking-[0.3em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] disabled:opacity-60"
+                                        className="rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-2 py-1 text-[9px] uppercase tracking-[0.2em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] disabled:opacity-60 sm:tracking-[0.3em]"
                                       >
                                         Ukloni
                                       </button>
@@ -1067,13 +1067,13 @@ const App: React.FC = () => {
                           <button
                             onClick={handleStart}
                             disabled={isBusy}
-                            className="w-full rounded-2xl bg-[var(--ink)] py-3 text-[11px] font-semibold uppercase tracking-[0.35em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
+                            className="w-full rounded-2xl bg-[var(--ink)] py-3 text-[11px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
                           >
                             Podeli uloge
                           </button>
                           <button
                             onClick={handleLeaveRoom}
-                            className="w-full rounded-2xl border border-red-500/40 bg-red-600 py-3 text-[10px] font-semibold uppercase tracking-[0.35em] text-white hover:bg-red-500 transition"
+                            className="w-full rounded-2xl border border-red-500/40 bg-red-600 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-white hover:bg-red-500 transition"
                           >
                             Napusti sobu
                           </button>
@@ -1083,7 +1083,7 @@ const App: React.FC = () => {
                           <p className="text-xs text-[color:var(--ink-muted)] italic">Cekamo da domacin podeli uloge...</p>
                           <button
                             onClick={handleLeaveRoom}
-                            className="w-full rounded-2xl border border-red-500/40 bg-red-600 py-3 text-[10px] font-semibold uppercase tracking-[0.35em] text-white hover:bg-red-500 transition"
+                            className="w-full rounded-2xl border border-red-500/40 bg-red-600 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-white hover:bg-red-500 transition"
                           >
                             Napusti sobu
                           </button>
@@ -1100,14 +1100,14 @@ const App: React.FC = () => {
 
                       <div className="relative overflow-hidden rounded-[28px] border border-[color:var(--line)] bg-[var(--surface-strong)] px-6 py-10 sm:py-12 group no-select">
                         <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--surface-strong)] transition-opacity duration-300 group-active:opacity-0">
-                          <span className="title-font text-base uppercase tracking-[0.4em] text-[color:var(--ink-muted)] select-none">
+                          <span className="title-font text-base uppercase tracking-[0.24em] sm:tracking-[0.4em] text-[color:var(--ink-muted)] select-none">
                             Drzi za prikaz
                           </span>
                         </div>
 
                         <div className="relative flex flex-col items-center">
                           <div className="text-6xl mb-4">{getRoleIcon(me?.role || Role.VILLAGER)}</div>
-                          <h3 className="title-font text-3xl text-[color:var(--ink)] uppercase tracking-tight">{me?.role}</h3>
+                          <h3 className="title-font break-words text-center text-3xl text-[color:var(--ink)] uppercase tracking-tight">{me?.role}</h3>
                           <p className="mt-3 text-xs text-[color:var(--ink-muted)] px-4">
                             {getRoleDescription(me?.role || Role.VILLAGER)}
                           </p>
@@ -1138,9 +1138,9 @@ const App: React.FC = () => {
                         {players.map((player) => (
                           <div
                             key={player.id}
-                            className="text-[10px] uppercase tracking-[0.35em] flex justify-between items-center"
+                            className="flex items-center justify-between gap-3 text-[10px] uppercase tracking-[0.16em] sm:tracking-[0.35em]"
                           >
-                            <span className={`font-semibold ${player.hasConfirmed ? 'text-emerald-600' : 'text-[color:var(--ink-soft)]'}`}>
+                            <span className={`min-w-0 flex-1 break-words text-left font-semibold ${player.hasConfirmed ? 'text-emerald-600' : 'text-[color:var(--ink-soft)]'}`}>
                               {player.name}
                             </span>
                             {player.hasConfirmed ? (
@@ -1153,7 +1153,7 @@ const App: React.FC = () => {
                       </div>
                       <button
                         onClick={handleLeaveRoom}
-                        className="w-full rounded-2xl border border-red-500/40 bg-red-600 py-3 text-[10px] font-semibold uppercase tracking-[0.35em] text-white hover:bg-red-500 transition"
+                        className="w-full rounded-2xl border border-red-500/40 bg-red-600 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-white hover:bg-red-500 transition"
                       >
                         Napusti sobu
                       </button>
@@ -1176,14 +1176,14 @@ const App: React.FC = () => {
                           <button
                             onClick={handleResetGame}
                             disabled={isBusy}
-                            className="w-full rounded-2xl bg-[var(--ink)] py-3 text-[11px] font-semibold uppercase tracking-[0.35em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
+                            className="w-full rounded-2xl bg-[var(--ink)] py-3 text-[11px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
                           >
                             Nova podela uloga
                           </button>
                         )}
                         <button
                           onClick={handleLeaveRoom}
-                          className="w-full rounded-2xl border border-red-500/40 bg-red-600 py-3 text-[10px] font-semibold uppercase tracking-[0.35em] text-white hover:bg-red-500 transition"
+                          className="w-full rounded-2xl border border-red-500/40 bg-red-600 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-white hover:bg-red-500 transition"
                         >
                           Napusti sobu
                         </button>
@@ -1195,7 +1195,7 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          <footer className="mt-5 sm:mt-8 flex items-center justify-center gap-2 text-[10px] uppercase tracking-[0.4em] text-[color:var(--ink-soft)]">
+          <footer className="mt-5 sm:mt-8 flex items-center justify-center gap-2 text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.4em] text-[color:var(--ink-soft)]">
             <i className="fas fa-fingerprint"></i>
             <span>Mafia Card Dealer</span>
           </footer>
