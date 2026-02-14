@@ -191,6 +191,8 @@ const App: React.FC = () => {
   const [nightTargetId, setNightTargetId] = useState('');
   const [voteTargetId, setVoteTargetId] = useState('');
   const [graveyardDraftMessage, setGraveyardDraftMessage] = useState('');
+  const [showVoteSummaryModal, setShowVoteSummaryModal] = useState(false);
+  const [dismissedVoteSummaryKey, setDismissedVoteSummaryKey] = useState('');
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
   const [hasRestoredSession, setHasRestoredSession] = useState(false);
   const [theme, setTheme] = useState<ThemeMode>(() => {
@@ -616,11 +618,6 @@ const App: React.FC = () => {
     [players, eliminatedPlayerIds],
   );
 
-  const graveyardPlayers = useMemo(
-    () => players.filter((player) => !player.isNarrator && eliminatedPlayerIds.has(player.id)),
-    [players, eliminatedPlayerIds],
-  );
-
   const graveyardMessages = useMemo(
     () => (roundState?.graveyardMessages ?? []).slice(-120),
     [roundState?.graveyardMessages],
@@ -667,6 +664,13 @@ const App: React.FC = () => {
   );
 
   const lastVoteSummary = roundState?.lastVoteSummary ?? null;
+  const voteSummaryModalKey = useMemo(() => {
+    if (!roundState || !lastVoteSummary) return '';
+    const countsKey = lastVoteSummary.voteCounts
+      .map((entry) => `${entry.playerId}:${entry.votes}`)
+      .join('|');
+    return `${roundState.round}:${lastVoteSummary.completedVoters}:${lastVoteSummary.totalVoters}:${lastVoteSummary.eliminatedPlayerId || 'none'}:${countsKey}`;
+  }, [roundState, lastVoteSummary]);
 
   const availableNightTargets = useMemo(() => {
     if (!me || !myNightActionType) return [];
@@ -687,6 +691,17 @@ const App: React.FC = () => {
     if (roundState?.phase !== 'voting' || !mySubmittedVote?.targetId) return;
     setVoteTargetId((prev) => prev || mySubmittedVote.targetId);
   }, [roundState?.phase, mySubmittedVote?.targetId]);
+
+  useEffect(() => {
+    if (!voteSummaryModalKey) {
+      setShowVoteSummaryModal(false);
+      return;
+    }
+    if (roundState?.phase === 'voting') return;
+    if (dismissedVoteSummaryKey !== voteSummaryModalKey) {
+      setShowVoteSummaryModal(true);
+    }
+  }, [voteSummaryModalKey, dismissedVoteSummaryKey, roundState?.phase]);
 
   const roundInspectorPreview = useMemo(() => {
     const action = roundState?.actions.find((item) => item.type === 'detective_check');
@@ -844,6 +859,8 @@ const App: React.FC = () => {
     setCustomRoleName('');
     setCustomRoleCount(1);
     setGraveyardDraftMessage('');
+    setShowVoteSummaryModal(false);
+    setDismissedVoteSummaryKey('');
 
     if (!code) return;
     try {
@@ -853,33 +870,56 @@ const App: React.FC = () => {
     }
   };
 
-  const renderVoteSummaryPanel = () => {
-    if (room?.status !== 'finished' || !lastVoteSummary) return null;
+  const closeVoteSummaryModal = () => {
+    if (voteSummaryModalKey) {
+      setDismissedVoteSummaryKey(voteSummaryModalKey);
+    }
+    setShowVoteSummaryModal(false);
+  };
+
+  const renderVoteSummaryModal = () => {
+    if (room?.status !== 'finished' || !lastVoteSummary || !showVoteSummaryModal) return null;
 
     return (
-      <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2 text-left">
-        <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">
-          Ishod glasanja
-        </p>
-        <div className="text-xs text-[color:var(--ink-muted)]">
-          Glasalo: {lastVoteSummary.completedVoters}/{lastVoteSummary.totalVoters}
-        </div>
-        <div className="text-xs text-[color:var(--ink-muted)]">
-          Izbacen: {lastVoteSummary.eliminatedPlayerName || 'niko'}
-        </div>
-        {lastVoteSummary.voteCounts.length > 0 && (
-          <div className="space-y-1.5 pt-1">
+      <div
+        className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 px-4 py-6"
+        onClick={closeVoteSummaryModal}
+      >
+        <div
+          className="w-full max-w-md rounded-3xl border border-[color:var(--line)] bg-[var(--surface)] p-5 space-y-3 text-left shadow-2xl"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">
+              Rezultat glasanja
+            </p>
+            <h3 className="mt-1 title-font text-2xl text-[color:var(--ink)]">
+              {lastVoteSummary.eliminatedPlayerName
+                ? `Izbacen je ${lastVoteSummary.eliminatedPlayerName}`
+                : 'Niko nije izbacen'}
+            </h3>
+          </div>
+          <div className="text-xs text-[color:var(--ink-muted)]">
+            Glasalo: {lastVoteSummary.completedVoters}/{lastVoteSummary.totalVoters}
+          </div>
+          <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1">
             {lastVoteSummary.voteCounts.map((entry) => (
               <div
                 key={entry.playerId}
-                className="flex items-center justify-between rounded-lg border border-[color:var(--line)] bg-[var(--surface-strong)] px-2.5 py-2 text-xs text-[color:var(--ink-muted)]"
+                className="flex items-center justify-between rounded-lg border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-sm text-[color:var(--ink-muted)]"
               >
                 <span>{entry.playerName}</span>
-                <span>{entry.votes}</span>
+                <span className="font-semibold text-[color:var(--ink)]">{entry.votes}</span>
               </div>
             ))}
           </div>
-        )}
+          <button
+            onClick={closeVoteSummaryModal}
+            className="w-full rounded-xl bg-[var(--ink)] py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90"
+          >
+            U redu
+          </button>
+        </div>
       </div>
     );
   };
@@ -996,8 +1036,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {renderVoteSummaryPanel()}
-
       {room?.status === 'finished' && roundState?.events?.length ? (
         <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2 text-left">
           <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Dogadjaji rundi</p>
@@ -1019,16 +1057,13 @@ const App: React.FC = () => {
 
       {room?.status === 'finished' && (
         <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-3 text-left">
-          <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Groblje</p>
-          <div className="text-xs text-[color:var(--ink-muted)]">
-            U groblju: {graveyardPlayers.length ? graveyardPlayers.map((player) => player.name).join(', ') : 'niko'}
-          </div>
-          <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
+          <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Groblje chat</p>
+          <div className="h-72 overflow-y-auto space-y-1.5 pr-1 rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-2.5">
             {graveyardMessages.length ? (
               [...graveyardMessages].reverse().map((message) => (
                 <div
                   key={message.id}
-                  className="rounded-lg border border-[color:var(--line)] bg-[var(--surface-strong)] px-2.5 py-2 text-xs text-[color:var(--ink-muted)]"
+                  className="rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-2.5 py-2 text-xs text-[color:var(--ink-muted)]"
                 >
                   <span className="font-semibold text-[color:var(--ink)]">{message.senderName}:</span>{' '}
                   {message.message}
@@ -1038,9 +1073,6 @@ const App: React.FC = () => {
               <p className="text-xs text-[color:var(--ink-soft)]">Nema poruka u groblju.</p>
             )}
           </div>
-          <p className="text-[10px] uppercase tracking-[0.14em] text-[color:var(--ink-soft)]">
-            Narator ima samo pregled ovog chata.
-          </p>
         </div>
       )}
 
@@ -1711,64 +1743,39 @@ const App: React.FC = () => {
                           <div>
                             <h2 className="title-font text-3xl text-[color:var(--ink)]">Groblje</h2>
                             <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                              Eliminisan si. Mozes da komuniciras samo sa igracima u groblju.
+                              Chat soba za eliminisane igrace.
                             </p>
                           </div>
-                          <div className="grid gap-3 text-left">
-                            <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2">
-                              <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]">
-                                Clanovi groblja
-                              </p>
-                              {graveyardPlayers.length ? (
-                                <div className="text-xs text-[color:var(--ink-muted)]">
-                                  {graveyardPlayers.map((player) => player.name).join(', ')}
-                                </div>
+                          <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 text-left space-y-3">
+                            <div className="h-[50vh] min-h-[300px] max-h-[560px] overflow-y-auto space-y-1.5 rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-2.5">
+                              {graveyardMessages.length ? (
+                                [...graveyardMessages].reverse().map((message) => (
+                                  <div
+                                    key={message.id}
+                                    className="rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-2.5 py-2 text-xs text-[color:var(--ink-muted)]"
+                                  >
+                                    <span className="font-semibold text-[color:var(--ink)]">{message.senderName}:</span>{' '}
+                                    {message.message}
+                                  </div>
+                                ))
                               ) : (
-                                <div className="text-xs text-[color:var(--ink-soft)]">Trenutno si sam u groblju.</div>
+                                <p className="text-xs text-[color:var(--ink-soft)]">Nema poruka.</p>
                               )}
                             </div>
-                            <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-3">
-                              <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]">
-                                Chat groblja
-                              </p>
-                              <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
-                                {graveyardMessages.length ? (
-                                  [...graveyardMessages].reverse().map((message) => (
-                                    <div
-                                      key={message.id}
-                                      className="rounded-lg border border-[color:var(--line)] bg-[var(--surface-strong)] px-2.5 py-2 text-xs text-[color:var(--ink-muted)]"
-                                    >
-                                      <span className="font-semibold text-[color:var(--ink)]">{message.senderName}:</span>{' '}
-                                      {message.message}
-                                    </div>
-                                  ))
-                                ) : (
-                                  <p className="text-xs text-[color:var(--ink-soft)]">Nema poruka.</p>
-                                )}
-                              </div>
-                              <div className="space-y-2">
-                                <textarea
-                                  value={graveyardDraftMessage}
-                                  onChange={(event) => setGraveyardDraftMessage(event.target.value)}
-                                  placeholder="Poruka za groblje..."
-                                  className="min-h-[72px] w-full resize-y rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-sm text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
-                                />
-                                <button
-                                  onClick={handleSendGraveyardMessage}
-                                  disabled={isBusy || !graveyardDraftMessage.trim()}
-                                  className="w-full rounded-xl bg-[var(--ink)] py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
-                                >
-                                  Posalji poruku
-                                </button>
-                              </div>
-                            </div>
-                            <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2">
-                              <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]">
-                                Pregled igre
-                              </p>
-                              <div className="text-xs text-[color:var(--ink-muted)]">
-                                Zivi igraci: {alivePlayers.length ? alivePlayers.map((player) => player.name).join(', ') : 'nema'}
-                              </div>
+                            <div className="grid gap-2 sm:grid-cols-[1fr,auto] sm:items-end">
+                              <textarea
+                                value={graveyardDraftMessage}
+                                onChange={(event) => setGraveyardDraftMessage(event.target.value)}
+                                placeholder="Poruka za groblje..."
+                                className="min-h-[86px] w-full resize-y rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-sm text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
+                              />
+                              <button
+                                onClick={handleSendGraveyardMessage}
+                                disabled={isBusy || !graveyardDraftMessage.trim()}
+                                className="w-full rounded-xl bg-[var(--ink)] px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60 sm:w-auto sm:min-h-[86px]"
+                              >
+                                Posalji
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -1870,8 +1877,6 @@ const App: React.FC = () => {
                         </div>
                       )}
 
-                      {renderVoteSummaryPanel()}
-
                       <div className="h-px bg-[color:var(--line)] w-full"></div>
                       <div className="space-y-3">
                         {me?.isHost && (
@@ -1896,6 +1901,8 @@ const App: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {renderVoteSummaryModal()}
 
           <footer className="mt-5 sm:mt-8 flex items-center justify-center gap-2 text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.4em] text-[color:var(--ink-soft)]">
             <i className="fas fa-fingerprint"></i>
