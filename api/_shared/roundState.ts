@@ -42,6 +42,7 @@ export const createDefaultRoundState = () => ({
   lastVoteSummary: null as any,
   gameResult: null as any,
   graveyardMessages: [] as any[],
+  mafiaMessages: [] as any[],
 });
 
 export const normalizeRoundState = (input: any) => {
@@ -115,6 +116,19 @@ export const normalizeRoundState = (input: any) => {
         .slice(-200)
     : [];
 
+  const mafiaMessages = Array.isArray(input.mafiaMessages)
+    ? input.mafiaMessages
+        .map((message: any) => ({
+          id: asString(message?.id) || (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)),
+          senderId: asString(message?.senderId),
+          senderName: asString(message?.senderName),
+          message: asString(message?.message).slice(0, 800),
+          createdAt: asString(message?.createdAt) || nowIso(),
+        }))
+        .filter((message: any) => message.senderId && message.senderName && message.message)
+        .slice(-300)
+    : [];
+
   const rawVoteSummary = input.lastVoteSummary;
   const lastVoteSummary =
     rawVoteSummary && typeof rawVoteSummary === 'object'
@@ -158,6 +172,7 @@ export const normalizeRoundState = (input: any) => {
     lastVoteSummary,
     gameResult: gameResult?.winner ? gameResult : null,
     graveyardMessages,
+    mafiaMessages,
   };
 };
 
@@ -195,4 +210,18 @@ export const appendGraveyardMessage = (state: any, senderId: string, senderName:
       createdAt: nowIso(),
     },
   ].slice(-200),
+});
+
+export const appendMafiaMessage = (state: any, senderId: string, senderName: string, message: string) => ({
+  ...state,
+  mafiaMessages: [
+    ...(Array.isArray(state.mafiaMessages) ? state.mafiaMessages : []),
+    {
+      id: globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2),
+      senderId,
+      senderName,
+      message,
+      createdAt: nowIso(),
+    },
+  ].slice(-300),
 });

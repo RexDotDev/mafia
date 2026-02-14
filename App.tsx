@@ -19,6 +19,7 @@ import {
   resetGame,
   resolveRound,
   sendGraveyardMessage,
+  sendMafiaMessage,
   startGame,
   startRound,
   submitRoundAction,
@@ -107,6 +108,18 @@ const normalizeRoundState = (raw: any): RoundState | null => {
         .filter((message: any) => message.senderId && message.senderName && message.message)
     : [];
 
+  const mafiaMessages = Array.isArray(raw?.mafiaMessages)
+    ? raw.mafiaMessages
+        .map((message: any) => ({
+          id: typeof message?.id === 'string' ? message.id : Math.random().toString(36).slice(2),
+          senderId: typeof message?.senderId === 'string' ? message.senderId : '',
+          senderName: typeof message?.senderName === 'string' ? message.senderName : '',
+          message: typeof message?.message === 'string' ? message.message : '',
+          createdAt: typeof message?.createdAt === 'string' ? message.createdAt : '',
+        }))
+        .filter((message: any) => message.senderId && message.senderName && message.message)
+    : [];
+
   return {
     round: typeof raw?.round === 'number' ? raw.round : 0,
     phase: raw?.phase === 'night' || raw?.phase === 'voting' ? raw.phase : 'idle',
@@ -115,6 +128,7 @@ const normalizeRoundState = (raw: any): RoundState | null => {
     events,
     eliminatedPlayerIds,
     graveyardMessages,
+    mafiaMessages,
     lastResult: raw?.lastResult && typeof raw.lastResult === 'object'
       ? {
           mafiaTargetId: raw.lastResult.mafiaTargetId ?? null,
@@ -208,6 +222,7 @@ const App: React.FC = () => {
   const [nightTargetId, setNightTargetId] = useState('');
   const [voteTargetId, setVoteTargetId] = useState('');
   const [graveyardDraftMessage, setGraveyardDraftMessage] = useState('');
+  const [mafiaDraftMessage, setMafiaDraftMessage] = useState('');
   const [showVoteSummaryModal, setShowVoteSummaryModal] = useState(false);
   const [dismissedVoteSummaryKey, setDismissedVoteSummaryKey] = useState('');
   const [showGameResultModal, setShowGameResultModal] = useState(false);
@@ -230,6 +245,7 @@ const App: React.FC = () => {
     return generated;
   });
   const graveyardChatRef = useRef<HTMLDivElement | null>(null);
+  const mafiaChatRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -274,16 +290,27 @@ const App: React.FC = () => {
     const canSeeGraveyard =
       !!currentPlayer &&
       (!!normalizedRoundState && normalizedRoundState.eliminatedPlayerIds.includes(currentPlayer.id));
+    const canSeeMafiaChat =
+      !!currentPlayer &&
+      !!normalizedRoundState &&
+      normalizedRoundState.phase === 'night' &&
+      !normalizedRoundState.eliminatedPlayerIds.includes(currentPlayer.id) &&
+      currentPlayer.role === Role.MAFIA;
+
+    let visibleRoundState = normalizedRoundState;
+    if (visibleRoundState && !canSeeGraveyard) {
+      visibleRoundState = { ...visibleRoundState, graveyardMessages: [] };
+    }
+    if (visibleRoundState && !canSeeMafiaChat) {
+      visibleRoundState = { ...visibleRoundState, mafiaMessages: [] };
+    }
 
     setRoom({
       id: roomRow.id,
       status: roomRow.status,
       settings: normalizeSettings(roomRow.settings),
       players,
-      roundState:
-        normalizedRoundState && !canSeeGraveyard
-          ? { ...normalizedRoundState, graveyardMessages: [] }
-          : normalizedRoundState,
+      roundState: visibleRoundState,
     });
   }, [clientId]);
 
@@ -532,6 +559,24 @@ const App: React.FC = () => {
     }
   };
 
+  const handleSendMafiaMessage = async () => {
+    if (!roomCode || !mafiaDraftMessage.trim()) return;
+    setErrorMessage('');
+    setIsBusy(true);
+    try {
+      await sendMafiaMessage({
+        roomCode,
+        clientId,
+        message: mafiaDraftMessage.trim(),
+      });
+      setMafiaDraftMessage('');
+    } catch (error: any) {
+      setErrorMessage(error?.message || 'Neuspesno slanje poruke u mafija chat.');
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
   const handleLadyToggle = async () => {
     if (!roomCode || !room) return;
     const next = !settings.lady;
@@ -642,6 +687,11 @@ const App: React.FC = () => {
     [roundState?.graveyardMessages],
   );
 
+  const mafiaMessages = useMemo(
+    () => (roundState?.mafiaMessages ?? []).slice(-200),
+    [roundState?.mafiaMessages],
+  );
+
   const playerNameById = useMemo(
     () => new Map(players.map((player) => [player.id, player.name])),
     [players],
@@ -704,6 +754,14 @@ const App: React.FC = () => {
   }, [alivePlayers, me, myNightActionType]);
 
   const isMeEliminated = me ? eliminatedPlayerIds.has(me.id) : false;
+  const isMafiaNightChatOpen =
+    phase === GamePhase.READY_TO_PLAY &&
+    !!me &&
+    !me.isNarrator &&
+    !isMeEliminated &&
+    me.role === Role.MAFIA &&
+    roundState?.phase === 'night' &&
+    !gameResult;
 
   useEffect(() => {
     if (!isMeEliminated) {
@@ -712,11 +770,24 @@ const App: React.FC = () => {
   }, [isMeEliminated]);
 
   useEffect(() => {
+    if (!isMafiaNightChatOpen) {
+      setMafiaDraftMessage('');
+    }
+  }, [isMafiaNightChatOpen]);
+
+  useEffect(() => {
     if (!isMeEliminated) return;
     const chatEl = graveyardChatRef.current;
     if (!chatEl) return;
     chatEl.scrollTop = chatEl.scrollHeight;
   }, [graveyardMessages.length, isMeEliminated]);
+
+  useEffect(() => {
+    if (!isMafiaNightChatOpen) return;
+    const chatEl = mafiaChatRef.current;
+    if (!chatEl) return;
+    chatEl.scrollTop = chatEl.scrollHeight;
+  }, [mafiaMessages.length, isMafiaNightChatOpen]);
 
   useEffect(() => {
     if (roundState?.phase !== 'voting' || !mySubmittedVote?.targetId) return;
@@ -900,6 +971,7 @@ const App: React.FC = () => {
     setCustomRoleName('');
     setCustomRoleCount(1);
     setGraveyardDraftMessage('');
+    setMafiaDraftMessage('');
     setShowVoteSummaryModal(false);
     setDismissedVoteSummaryKey('');
     setShowGameResultModal(false);
@@ -998,6 +1070,99 @@ const App: React.FC = () => {
           >
             U redu
           </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderMafiaNightModal = () => {
+    if (!isMafiaNightChatOpen) return null;
+
+    return (
+      <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/60 px-4 py-6">
+        <div className="w-full max-w-3xl rounded-3xl border border-[color:var(--line)] bg-[var(--surface)] p-5 shadow-2xl">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Mafija chat</p>
+              <h3 className="title-font text-2xl text-[color:var(--ink)]">Dogovor mafije</h3>
+            </div>
+            <span className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--ink-soft)]">
+              Runda {roundState?.round || 0}
+            </span>
+          </div>
+
+          <div
+            ref={mafiaChatRef}
+            className="mt-4 h-[44vh] min-h-[260px] overflow-y-auto space-y-2 rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-3"
+          >
+            {mafiaMessages.length ? (
+              mafiaMessages.map((message) => {
+                const isMine = message.senderId === me?.id;
+                return (
+                  <div key={message.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                    <div
+                      className={`max-w-[86%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
+                        isMine
+                          ? 'rounded-br-md bg-red-600 text-white'
+                          : 'rounded-bl-md border border-[color:var(--line)] bg-[var(--surface)] text-[color:var(--ink)]'
+                      }`}
+                    >
+                      {!isMine && (
+                        <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--ink-faint)]">
+                          {message.senderName}
+                        </div>
+                      )}
+                      <div className="break-words whitespace-pre-wrap">{message.message}</div>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <p className="text-xs text-[color:var(--ink-soft)]">Nema poruka u mafija chatu.</p>
+            )}
+          </div>
+
+          <div className="mt-3 grid gap-2 sm:grid-cols-[1fr,auto] sm:items-end">
+            <textarea
+              value={mafiaDraftMessage}
+              onChange={(event) => setMafiaDraftMessage(event.target.value)}
+              placeholder="Poruka za mafiju..."
+              className="min-h-[82px] w-full resize-y rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-sm text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
+            />
+            <button
+              onClick={handleSendMafiaMessage}
+              disabled={isBusy || !mafiaDraftMessage.trim()}
+              className="w-full rounded-xl bg-[var(--ink)] px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60 sm:w-auto sm:min-h-[82px]"
+            >
+              Posalji
+            </button>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-3 space-y-2">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]">Odabir mete</p>
+            <select
+              value={nightTargetId}
+              onChange={(event) => setNightTargetId(event.target.value)}
+              className="w-full rounded-xl border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[color:var(--ink)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
+            >
+              <option value="">Izaberi igraca</option>
+              {availableNightTargets.map((player) => (
+                <option key={player.id} value={player.id}>
+                  {player.name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={handleSubmitNightAction}
+              disabled={isBusy || !nightTargetId}
+              className="w-full rounded-xl bg-[var(--ink)] py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
+            >
+              Potvrdi metu
+            </button>
+            {mySubmittedAction && (
+              <p className="text-xs text-[color:var(--ink-muted)]">Poslednji izbor: {mySubmittedAction.targetName}</p>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -1247,6 +1412,9 @@ const App: React.FC = () => {
     setHasRestoredSession(true);
   }, [hasRestoredSession]);
 
+  const isFocusedGraveyardMode =
+    phase === GamePhase.READY_TO_PLAY && !!me && !me.isNarrator && isMeEliminated;
+
   if (!hasRestoredSession) {
     return (
       <div className="app-bg">
@@ -1272,6 +1440,102 @@ const App: React.FC = () => {
               </div>
               <p className="mt-3 text-center text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Ucitavanje...</p>
             </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isFocusedGraveyardMode) {
+    return (
+      <div className="app-bg">
+        {themeToggleFloating}
+        <div className="app-shell flex min-h-screen items-center justify-center px-4 py-6 sm:px-6 sm:py-10">
+          <div className="w-full max-w-6xl">
+            <div className="relative">
+              <div className="absolute -inset-1 rounded-[36px] bg-gradient-to-br from-red-500/45 via-red-400/20 to-transparent blur-2xl"></div>
+              <div className="relative overflow-hidden rounded-[32px] border border-[color:var(--line)] bg-[var(--surface)]">
+                <div className="p-5 sm:p-8 md:p-10">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h2 className="title-font text-3xl sm:text-4xl text-[color:var(--ink)]">Groblje</h2>
+                      <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
+                        Chat soba za eliminisane igrace.
+                      </p>
+                      {gameResult && (
+                        <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
+                          Igra je zavrsena: {gameResult.winner === 'city' ? 'Grad je pobedio.' : 'Mafija je pobedila.'}
+                        </p>
+                      )}
+                    </div>
+                    {themeToggleInline}
+                  </div>
+
+                  <div className="mt-5 rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 text-left space-y-3">
+                    <div
+                      ref={graveyardChatRef}
+                      className="h-[62vh] min-h-[360px] max-h-[720px] overflow-y-auto space-y-2 rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-3"
+                    >
+                      {graveyardMessages.length ? (
+                        graveyardMessages.map((message) => {
+                          const isMine = message.senderId === me?.id;
+                          return (
+                            <div
+                              key={message.id}
+                              className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
+                            >
+                              <div
+                                className={`max-w-[86%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
+                                  isMine
+                                    ? 'rounded-br-md bg-red-600 text-white'
+                                    : 'rounded-bl-md border border-[color:var(--line)] bg-[var(--surface)] text-[color:var(--ink)]'
+                                }`}
+                              >
+                                {!isMine && (
+                                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--ink-faint)]">
+                                    {message.senderName}
+                                  </div>
+                                )}
+                                <div className="break-words whitespace-pre-wrap">{message.message}</div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <p className="text-xs text-[color:var(--ink-soft)]">Nema poruka.</p>
+                      )}
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-[1fr,auto] sm:items-end">
+                      <textarea
+                        value={graveyardDraftMessage}
+                        onChange={(event) => setGraveyardDraftMessage(event.target.value)}
+                        placeholder="Poruka za groblje..."
+                        className="min-h-[86px] w-full resize-y rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-sm text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
+                      />
+                      <button
+                        onClick={handleSendGraveyardMessage}
+                        disabled={isBusy || !graveyardDraftMessage.trim()}
+                        className="w-full rounded-xl bg-[var(--ink)] px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60 sm:w-auto sm:min-h-[86px]"
+                      >
+                        Posalji
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      onClick={handleLeaveRoom}
+                      className="rounded-2xl border border-red-500/40 bg-red-600 px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-white hover:bg-red-500 transition"
+                    >
+                      Napusti sobu
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {renderGameResultModal()}
+            {renderVoteSummaryModal()}
           </div>
         </div>
       </div>
@@ -1872,7 +2136,14 @@ const App: React.FC = () => {
                             {gameResult.winner === 'city' ? 'Grad je pobedio.' : 'Mafija je pobedila.'}
                           </p>
                         </div>
-                      ) : roundState?.phase === 'night' && myNightActionType ? (
+                      ) : roundState?.phase === 'night' && me?.role === Role.MAFIA ? (
+                        <div>
+                          <h2 className="title-font text-3xl text-[color:var(--ink)]">Mafija noc</h2>
+                          <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
+                            Otvoren je mafija chat modal za dogovor i izbor mete.
+                          </p>
+                        </div>
+                      ) : roundState?.phase === 'night' && myNightActionType && me?.role !== Role.MAFIA ? (
                         <div className="space-y-4">
                           <div>
                             <h2 className="title-font text-3xl text-[color:var(--ink)]">Nocna akcija</h2>
@@ -1995,6 +2266,7 @@ const App: React.FC = () => {
             </div>
           </div>
 
+          {renderMafiaNightModal()}
           {renderGameResultModal()}
           {renderVoteSummaryModal()}
 

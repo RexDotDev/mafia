@@ -115,6 +115,14 @@ export interface GraveyardMessage {
   createdAt: string;
 }
 
+export interface MafiaMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  message: string;
+  createdAt: string;
+}
+
 export interface RoundState {
   round: number;
   phase: RoundPhase;
@@ -126,6 +134,7 @@ export interface RoundState {
   lastVoteSummary: RoundVoteSummary | null;
   gameResult: RoundGameResult | null;
   graveyardMessages: GraveyardMessage[];
+  mafiaMessages: MafiaMessage[];
 }
 
 export interface RoomData {

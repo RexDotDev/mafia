@@ -1,5 +1,11 @@
 import { supabaseAdmin } from '../../_shared/supabase.js';
-import { appendGraveyardMessage, getActionTypeForRole, normalizeRoundState } from '../../_shared/roundState.js';
+import { Role } from '../../../types.js';
+import {
+  appendGraveyardMessage,
+  appendMafiaMessage,
+  getActionTypeForRole,
+  normalizeRoundState,
+} from '../../_shared/roundState.js';
 import { normalizeRoomCode, sanitizeSettings } from '../../_shared/roomUtils.js';
 
 const toJson = (res: any, status: number, payload: any) => {
@@ -16,6 +22,7 @@ export default async function handler(req: any, res: any) {
   const clientId = String(body?.clientId || '').trim();
   const targetId = String(body?.targetId || '').trim();
   const message = String(body?.message || '').trim();
+  const chatScope = String(body?.chatScope || '').trim().toLowerCase();
 
   if (!roomCode || !clientId) {
     return toJson(res, 400, { error: 'Missing roomCode or clientId' });
@@ -51,8 +58,43 @@ export default async function handler(req: any, res: any) {
   }
 
   if (message) {
+    if (chatScope === 'mafia') {
+      if (roundState.gameResult) {
+        return toJson(res, 409, { error: 'Igra je zavrsena.' });
+      }
+      if (roundState.phase !== 'night') {
+        return toJson(res, 409, { error: 'Mafija chat je dostupan samo nocu.' });
+      }
+      if (actor.is_narrator) {
+        return toJson(res, 403, { error: 'Narator nema pristup mafija chatu.' });
+      }
+      if (roundState.eliminatedPlayerIds.includes(actor.id)) {
+        return toJson(res, 403, { error: 'Eliminisani igraci nemaju pristup mafija chatu.' });
+      }
+      if (actor.role !== Role.MAFIA) {
+        return toJson(res, 403, { error: 'Samo mafija moze pisati u mafija chat.' });
+      }
+
+      const nextRoundState = appendMafiaMessage(
+        roundState,
+        actor.id,
+        actor.name,
+        message.slice(0, 800),
+      );
+      const { error: updateMessageError } = await supabaseAdmin
+        .from('rooms')
+        .update({ settings: { ...settings, roundState: nextRoundState } })
+        .eq('id', room.id);
+
+      if (updateMessageError) {
+        return toJson(res, 500, { error: 'Failed to send mafia message' });
+      }
+
+      return toJson(res, 200, { data: { ok: true } });
+    }
+
     if (actor.is_narrator) {
-      return toJson(res, 403, { error: 'Narator ima samo pregled groblja.' });
+      return toJson(res, 403, { error: 'Narator ne moze da pise u chat.' });
     }
     if (!roundState.eliminatedPlayerIds.includes(actor.id)) {
       return toJson(res, 403, { error: 'Samo eliminisani igraci mogu pisati u groblju.' });

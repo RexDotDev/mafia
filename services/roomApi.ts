@@ -106,3 +106,14 @@ export async function sendGraveyardMessage(payload: {
 }): Promise<{ ok: true }> {
   return postJson<{ ok: true }>('/api/rooms/round/action', payload);
 }
+
+export async function sendMafiaMessage(payload: {
+  roomCode: string;
+  clientId: string;
+  message: string;
+}): Promise<{ ok: true }> {
+  return postJson<{ ok: true }>('/api/rooms/round/action', {
+    ...payload,
+    chatScope: 'mafia',
+  });
+}

@@ -39,6 +39,7 @@ export function sanitizeSettings(input: any) {
     normalizedRoundState.votes.length > 0 ||
     normalizedRoundState.eliminatedPlayerIds.length > 0 ||
     normalizedRoundState.graveyardMessages.length > 0 ||
+    normalizedRoundState.mafiaMessages.length > 0 ||
     normalizedRoundState.phase !== 'idle' ||
     normalizedRoundState.lastResult !== null ||
     normalizedRoundState.lastVoteSummary !== null ||

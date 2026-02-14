@@ -71,6 +71,7 @@ export default async function handler(req: any, res: any) {
     lastResult: null,
     lastVoteSummary: null,
     gameResult: null,
+    mafiaMessages: [],
   };
   nextState = appendRoundEvent(nextState, nextRound, 'round_started', `Runda ${nextRound} je pokrenuta.`);
 

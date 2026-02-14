@@ -177,6 +177,7 @@ export default async function handler(req: any, res: any) {
     phase: shouldOpenVoting ? 'voting' : 'idle',
     actions: [],
     votes: [],
+    mafiaMessages: [],
     eliminatedPlayerIds: nextEliminated,
     lastResult: {
       ...createDefaultRoundResult(),
