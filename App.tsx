@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   CustomRoleSetting,
   GamePhase,
@@ -229,6 +229,7 @@ const App: React.FC = () => {
     localStorage.setItem('mafia_client_id', generated);
     return generated;
   });
+  const graveyardChatRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -709,6 +710,13 @@ const App: React.FC = () => {
       setGraveyardDraftMessage('');
     }
   }, [isMeEliminated]);
+
+  useEffect(() => {
+    if (!isMeEliminated) return;
+    const chatEl = graveyardChatRef.current;
+    if (!chatEl) return;
+    chatEl.scrollTop = chatEl.scrollHeight;
+  }, [graveyardMessages.length, isMeEliminated]);
 
   useEffect(() => {
     if (roundState?.phase !== 'voting' || !mySubmittedVote?.targetId) return;
@@ -1807,17 +1815,35 @@ const App: React.FC = () => {
                             )}
                           </div>
                           <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 text-left space-y-3">
-                            <div className="h-[50vh] min-h-[300px] max-h-[560px] overflow-y-auto space-y-1.5 rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-2.5">
+                            <div
+                              ref={graveyardChatRef}
+                              className="h-[50vh] min-h-[300px] max-h-[560px] overflow-y-auto space-y-2 rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-2.5"
+                            >
                               {graveyardMessages.length ? (
-                                [...graveyardMessages].reverse().map((message) => (
-                                  <div
-                                    key={message.id}
-                                    className="rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-2.5 py-2 text-xs text-[color:var(--ink-muted)]"
-                                  >
-                                    <span className="font-semibold text-[color:var(--ink)]">{message.senderName}:</span>{' '}
-                                    {message.message}
-                                  </div>
-                                ))
+                                graveyardMessages.map((message) => {
+                                  const isMine = message.senderId === me?.id;
+                                  return (
+                                    <div
+                                      key={message.id}
+                                      className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
+                                    >
+                                      <div
+                                        className={`max-w-[86%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
+                                          isMine
+                                            ? 'rounded-br-md bg-red-600 text-white'
+                                            : 'rounded-bl-md border border-[color:var(--line)] bg-[var(--surface)] text-[color:var(--ink)]'
+                                        }`}
+                                      >
+                                        {!isMine && (
+                                          <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--ink-faint)]">
+                                            {message.senderName}
+                                          </div>
+                                        )}
+                                        <div className="break-words whitespace-pre-wrap">{message.message}</div>
+                                      </div>
+                                    </div>
+                                  );
+                                })
                               ) : (
                                 <p className="text-xs text-[color:var(--ink-soft)]">Nema poruka.</p>
                               )}
