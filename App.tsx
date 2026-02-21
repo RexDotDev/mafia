@@ -31,6 +31,7 @@ const DEFAULT_SETTINGS: RoomSettings = {
   doctor: true,
   detective: true,
   lady: false,
+  casualMode: false,
   customRoles: [],
 };
 
@@ -48,6 +49,7 @@ const normalizeSettings = (raw: any): RoomSettings => {
     doctor: true,
     detective: true,
     lady: typeof raw?.lady === 'boolean' ? raw.lady : false,
+    casualMode: typeof raw?.casualMode === 'boolean' ? raw.casualMode : false,
     customRoles,
   };
 };
@@ -598,6 +600,27 @@ const App: React.FC = () => {
     }
   };
 
+  const handleCasualModeToggle = async () => {
+    if (!roomCode || !room) return;
+    const next = !settings.casualMode;
+    setErrorMessage('');
+    setIsBusy(true);
+    try {
+      await updateSettings({
+        roomCode,
+        clientId,
+        settings: {
+          ...settings,
+          casualMode: next,
+        },
+      });
+    } catch (error: any) {
+      setErrorMessage(error?.message || 'Neuspesna promena moda.');
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
   const handleAddCustomRole = async () => {
     if (!roomCode || !room) return;
     const trimmed = customRoleName.trim();
@@ -671,6 +694,7 @@ const App: React.FC = () => {
   const players = room?.players ?? [];
   const settings = room?.settings ?? DEFAULT_SETTINGS;
   const roundState = room?.roundState;
+  const isCasualMode = !!settings.casualMode;
 
   const eliminatedPlayerIds = useMemo(
     () => new Set(roundState?.eliminatedPlayerIds ?? []),
@@ -756,6 +780,7 @@ const App: React.FC = () => {
   const isMeEliminated = me ? eliminatedPlayerIds.has(me.id) : false;
   const isMafiaNightChatOpen =
     phase === GamePhase.READY_TO_PLAY &&
+    !isCasualMode &&
     !!me &&
     !me.isNarrator &&
     !isMeEliminated &&
@@ -912,6 +937,10 @@ const App: React.FC = () => {
 
   const toggleDraftLady = () => {
     setDraftSettings((prev) => ({ ...prev, lady: !prev.lady }));
+  };
+
+  const toggleDraftCasualMode = () => {
+    setDraftSettings((prev) => ({ ...prev, casualMode: !prev.casualMode }));
   };
 
   const handleAddDraftCustomRole = () => {
@@ -1177,7 +1206,7 @@ const App: React.FC = () => {
         </p>
         {room?.status === 'finished' && (
           <p className="mt-2 text-xs uppercase tracking-[0.3em] text-emerald-600">
-            Svi su videli uloge. Runda {roundState?.round || 0}
+            {isCasualMode ? 'Kezual mod je aktivan' : `Svi su videli uloge. Runda ${roundState?.round || 0}`}
           </p>
         )}
       </div>
@@ -1185,9 +1214,11 @@ const App: React.FC = () => {
       {room?.status === 'finished' && (
         <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-3 text-left">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Kontrola runde</p>
+            <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">
+              {isCasualMode ? 'Kezual mod' : 'Kontrola runde'}
+            </p>
             <span className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--ink-soft)]">
-              Faza: {roundState?.phase || 'idle'}
+              {isCasualMode ? 'Bez gameplay-a u aplikaciji' : `Faza: ${roundState?.phase || 'idle'}`}
             </span>
           </div>
 
@@ -1202,8 +1233,13 @@ const App: React.FC = () => {
               Igra je zavrsena: {gameResult.winner === 'city' ? 'Grad je pobedio.' : 'Mafija je pobedila.'}
             </div>
           )}
+          {isCasualMode && (
+            <p className="text-xs text-[color:var(--ink-muted)]">
+              Ovaj mod sluzi samo za dodelu i pregled uloga. Sva nocna igra, glasanje i chat su van aplikacije.
+            </p>
+          )}
 
-          {!gameResult && (roundState?.phase === 'idle' || !roundState) && (
+          {!isCasualMode && !gameResult && (roundState?.phase === 'idle' || !roundState) && (
             <button
               onClick={handleStartRound}
               disabled={isBusy}
@@ -1213,7 +1249,7 @@ const App: React.FC = () => {
             </button>
           )}
 
-          {!gameResult && roundState?.phase === 'night' && (
+          {!isCasualMode && !gameResult && roundState?.phase === 'night' && (
             <button
               onClick={handleResolveRound}
               disabled={isBusy}
@@ -1223,7 +1259,7 @@ const App: React.FC = () => {
             </button>
           )}
 
-          {!gameResult && roundState?.phase === 'voting' && (
+          {!isCasualMode && !gameResult && roundState?.phase === 'voting' && (
             <div className="space-y-2">
               <div className="text-xs text-[color:var(--ink-muted)]">
                 Glasalo: {votedPlayers.length}/{alivePlayers.length}
@@ -1242,7 +1278,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {room?.status === 'finished' && roundState?.phase === 'night' && (
+      {!isCasualMode && room?.status === 'finished' && roundState?.phase === 'night' && (
         <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2 text-left">
           <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Akcije ove noci</p>
           <div className="text-xs text-[color:var(--ink-muted)]">
@@ -1264,7 +1300,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {room?.status === 'finished' && roundState?.lastResult && (
+      {!isCasualMode && room?.status === 'finished' && roundState?.lastResult && (
         <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2 text-left">
           <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Ishod prethodne noci</p>
           <div className="text-xs text-[color:var(--ink-muted)]">
@@ -1285,7 +1321,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {room?.status === 'finished' && roundState?.events?.length ? (
+      {!isCasualMode && room?.status === 'finished' && roundState?.events?.length ? (
         <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2 text-left">
           <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Dogadjaji rundi</p>
           <div className="max-h-52 overflow-y-auto space-y-1.5 pr-1">
@@ -1727,6 +1763,31 @@ const App: React.FC = () => {
                             </div>
                           </div>
 
+                          <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-2.5">
+                            <div className="flex items-center justify-between">
+                              <p className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--ink-faint)]">Kezual mod</p>
+                              <button
+                                type="button"
+                                onClick={toggleDraftCasualMode}
+                                aria-pressed={draftSettings.casualMode}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                                  draftSettings.casualMode
+                                    ? 'bg-red-600'
+                                    : 'bg-[var(--surface)] border border-[color:var(--line)]'
+                                }`}
+                              >
+                                <span
+                                  className={`inline-block h-[18px] w-[18px] transform rounded-full bg-white shadow transition ${
+                                    draftSettings.casualMode ? 'translate-x-[22px]' : 'translate-x-1'
+                                  }`}
+                                ></span>
+                              </button>
+                            </div>
+                            <p className="mt-2 text-[9px] uppercase tracking-[0.16em] text-[color:var(--ink-faint)]">
+                              {draftSettings.casualMode ? 'Samo dodela uloga' : 'Puna igra u aplikaciji'}
+                            </p>
+                          </div>
+
                           {showDraftCustomRoles && (
                             <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-2.5 space-y-2.5">
                               <p className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--ink-faint)]">Dodatne uloge</p>
@@ -1886,6 +1947,31 @@ const App: React.FC = () => {
                             </div>
                             <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--ink-faint)]">
                               {settings.lady ? 'U igri' : 'Iskljucena'}
+                            </p>
+                          </div>
+                          <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface)] p-3 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-[color:var(--ink-muted)]">Kezual mod</span>
+                              <button
+                                type="button"
+                                onClick={handleCasualModeToggle}
+                                disabled={isBusy}
+                                aria-pressed={settings.casualMode}
+                                className={`relative inline-flex h-7 w-12 items-center rounded-full transition ${
+                                  settings.casualMode
+                                    ? 'bg-red-600'
+                                    : 'bg-[var(--surface-strong)] border border-[color:var(--line)]'
+                                } ${isBusy ? 'opacity-60' : ''}`}
+                              >
+                                <span
+                                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
+                                    settings.casualMode ? 'translate-x-6' : 'translate-x-1'
+                                  }`}
+                                ></span>
+                              </button>
+                            </div>
+                            <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--ink-faint)]">
+                              {settings.casualMode ? 'Samo dodela uloga' : 'Puna igra u aplikaciji'}
                             </p>
                           </div>
                           <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface)] p-3 space-y-3">
@@ -2134,6 +2220,13 @@ const App: React.FC = () => {
                           <h2 className="title-font text-3xl text-[color:var(--ink)]">Igra je zavrsena</h2>
                           <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
                             {gameResult.winner === 'city' ? 'Grad je pobedio.' : 'Mafija je pobedila.'}
+                          </p>
+                        </div>
+                      ) : isCasualMode ? (
+                        <div>
+                          <h2 className="title-font text-3xl text-[color:var(--ink)]">Kezual mod</h2>
+                          <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
+                            Uloge su podeljene. Dalji tok igre (akcije, glasanje i eliminacije) vodite uzivo van aplikacije.
                           </p>
                         </div>
                       ) : roundState?.phase === 'night' && me?.role === Role.MAFIA ? (

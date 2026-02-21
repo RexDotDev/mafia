@@ -60,6 +60,9 @@ export default async function handler(req: any, res: any) {
   }
 
   const settings = sanitizeSettings(room.settings);
+  if (settings.casualMode) {
+    return toJson(res, 409, { error: 'Kezual mod: glasanje u aplikaciji je iskljuceno.' });
+  }
   const roundState = normalizeRoundState(settings.roundState);
   if (roundState.gameResult) {
     return toJson(res, 409, { error: 'Igra je vec zavrsena.' });

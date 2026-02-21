@@ -5,6 +5,7 @@ export const DEFAULT_SETTINGS = {
   doctor: true,
   detective: true,
   lady: false,
+  casualMode: false,
   customRoles: [] as { name: string; count: number }[],
   roundState: null as any,
 };
@@ -50,6 +51,7 @@ export function sanitizeSettings(input: any) {
     doctor: true,
     detective: true,
     lady: typeof input?.lady === 'boolean' ? input.lady : DEFAULT_SETTINGS.lady,
+    casualMode: typeof input?.casualMode === 'boolean' ? input.casualMode : DEFAULT_SETTINGS.casualMode,
     customRoles: sanitizeCustomRoles(input?.customRoles),
     roundState: hasRoundState ? normalizedRoundState : null,
   };

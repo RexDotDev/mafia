@@ -35,6 +35,7 @@ export interface RoomSettings {
   doctor: boolean;
   detective: boolean;
   lady: boolean;
+  casualMode: boolean;
   customRoles: CustomRoleSetting[];
 }
 

@@ -50,6 +50,9 @@ export default async function handler(req: any, res: any) {
   }
 
   const settings = sanitizeSettings(room.settings);
+  if (settings.casualMode) {
+    return toJson(res, 409, { error: 'Kezual mod: nocne runde su iskljucene.' });
+  }
   const currentState = normalizeRoundState(settings.roundState);
   if (currentState.gameResult) {
     return toJson(res, 409, { error: 'Igra je zavrsena. Pokreni novu podelu uloga.' });

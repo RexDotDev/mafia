@@ -44,6 +44,9 @@ export default async function handler(req: any, res: any) {
   }
 
   const settings = sanitizeSettings(room.settings);
+  if (settings.casualMode) {
+    return toJson(res, 409, { error: 'Kezual mod: akcije i chat su iskljuceni.' });
+  }
   const roundState = normalizeRoundState(settings.roundState);
 
   const { data: actor, error: actorError } = await supabaseAdmin

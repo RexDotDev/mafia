@@ -4,7 +4,7 @@ create table if not exists public.rooms (
   id uuid primary key default gen_random_uuid(),
   code text unique not null,
   status text not null default 'waiting',
-  settings jsonb not null default '{"mafiaCount":1,"doctor":true,"detective":true,"lady":false,"customRoles":[]}'::jsonb,
+  settings jsonb not null default '{"mafiaCount":1,"doctor":true,"detective":true,"lady":false,"casualMode":false,"customRoles":[]}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
