@@ -1,5 +1,5 @@
-import { supabaseAdmin } from '../_shared/supabase.js';
-import { DEFAULT_SETTINGS, normalizeRoomCode, sanitizeSettings } from '../_shared/roomUtils.js';
+import { supabaseAdmin } from '../../server/supabase.js';
+import { DEFAULT_SETTINGS, normalizeRoomCode, sanitizeSettings } from '../../server/roomUtils.js';
 
 const toJson = (res: any, status: number, payload: any) => {
   res.status(status).json(payload);
@@ -21,6 +21,15 @@ export default async function handler(req: any, res: any) {
   }
 
   const code = normalizeRoomCode(roomCode);
+  if (!/^\d{6}$/.test(code)) {
+    return toJson(res, 400, { error: 'Room code must contain exactly 6 digits' });
+  }
+  if (playerName.length > 32) {
+    return toJson(res, 400, { error: 'Player name must be 32 characters or fewer' });
+  }
+  if (clientId.length > 128) {
+    return toJson(res, 400, { error: 'Invalid client identifier' });
+  }
 
   const { data: room, error: roomError } = await supabaseAdmin
     .from('rooms')

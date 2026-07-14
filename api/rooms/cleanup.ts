@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../_shared/supabase.js';
+import { supabaseAdmin } from '../../server/supabase.js';
 
 const toJson = (res: any, status: number, payload: any) => {
   res.status(status).json(payload);
@@ -11,12 +11,10 @@ export default async function handler(req: any, res: any) {
     return toJson(res, 405, { error: 'Method not allowed' });
   }
 
-  const secret = process.env.CLEANUP_SECRET;
-  if (secret) {
-    const provided = req.headers['x-cleanup-secret'] || req.query?.secret;
-    if (String(provided || '') !== secret) {
-      return toJson(res, 401, { error: 'Unauthorized' });
-    }
+  const secret = process.env.CRON_SECRET;
+  const provided = req.headers.authorization;
+  if (!secret || provided !== `Bearer ${secret}`) {
+    return toJson(res, 401, { error: 'Unauthorized' });
   }
 
   const cutoff = new Date(Date.now() - STALE_MINUTES * 60 * 1000).toISOString();

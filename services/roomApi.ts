@@ -17,6 +17,28 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
   return payload.data;
 }
 
+export async function getRoomState(payload: {
+  roomId: string;
+  roomCode: string;
+  clientId: string;
+}): Promise<{
+  id: string;
+  status: 'waiting' | 'started' | 'finished';
+  settings: unknown;
+  players: Array<{
+    id: string;
+    clientId: string;
+    name: string;
+    role?: string;
+    hasConfirmed: boolean;
+    isHost: boolean;
+    isNarrator: boolean;
+  }>;
+  roundState: unknown;
+}> {
+  return postJson('/api/rooms/state', payload);
+}
+
 export async function joinRoom(payload: {
   roomCode: string;
   playerName: string;
@@ -60,13 +82,6 @@ export async function leaveRoom(payload: {
   clientId: string;
 }): Promise<{ ok: true }> {
   return postJson<{ ok: true }>('/api/rooms/leave', payload);
-}
-
-export async function pingRoom(payload: {
-  roomCode: string;
-  clientId: string;
-}): Promise<{ ok: true }> {
-  return postJson<{ ok: true }>('/api/rooms/ping', payload);
 }
 
 export async function startRound(payload: {

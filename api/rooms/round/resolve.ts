@@ -1,7 +1,7 @@
-import { supabaseAdmin } from '../../_shared/supabase.js';
+import { supabaseAdmin } from '../../../server/supabase.js';
 import { Role } from '../../../types.js';
-import { appendRoundEvent, createDefaultRoundResult, normalizeRoundState } from '../../_shared/roundState.js';
-import { normalizeRoomCode, sanitizeSettings } from '../../_shared/roomUtils.js';
+import { appendRoundEvent, createDefaultRoundResult, normalizeRoundState } from '../../../server/roundState.js';
+import { normalizeRoomCode, sanitizeSettings } from '../../../server/roomUtils.js';
 
 const toJson = (res: any, status: number, payload: any) => {
   res.status(status).json(payload);

@@ -1,46 +1,55 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Mafia Night Game
 
-# Run and deploy your AI Studio app
+A browser-based implementation of the Mafia party game with rooms, role assignment, night actions, voting, narrator controls, and optional in-game chat.
 
-This contains everything you need to run your app locally.
+## Security model
 
-View your app in AI Studio: https://example.invalid
+- Browser clients never receive the Supabase service-role key.
+- Supabase tables have row-level security enabled and no direct browser read policy.
+- The serverless state endpoint returns a player-specific projection: a player sees their own role, Mafia teammates can see one another, and the narrator can see the full game state.
+- The cleanup cron endpoint requires Vercel's `CRON_SECRET` bearer token.
+- No AI provider or client-side API key is required.
 
-## Supabase Setup (Required)
+The browser stores a random client identifier in local storage. Treat room codes as invitations and do not reuse them for sensitive authentication.
 
-1. Create a Supabase project.
-2. Run the SQL from `supabase/schema.sql` in the SQL editor.
-3. Copy these keys:
-   - Project URL
-   - `anon` public key
-   - `service_role` key (server-only)
+## Local setup
 
-## Run Locally
+Requirements: Node.js 22.12+, npm, a Supabase project, and the Vercel CLI.
 
-**Prerequisites:**  Node.js
+1. Run `supabase/schema.sql` in the Supabase SQL editor.
+2. Copy `.env.example` to `.env.local` and add your own values.
+3. Install and run the application:
 
-1. Install dependencies:
-   `npm install`
-2. Set the env vars in `.env.local`:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-   - `SUPABASE_URL`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-   - `GEMINI_API_KEY` (optional)
-3. Run the app (frontend only):
-   `npm run dev`
+```bash
+npm ci
+npx vercel dev
+```
 
-> Note: For local API routes, use `vercel dev` so the `api/*` functions run locally.
+`vercel dev` is required because the application uses the serverless routes in `api/`.
 
-## Deploy to Vercel
+## Environment variables
 
-1. Import the repo into Vercel.
-2. Set Build Command: `npm run build`
-3. Set Output Directory: `dist`
-4. Add the same environment variables from `.env.local` in Vercel:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-   - `SUPABASE_URL`
-   - `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_URL` — server-side Supabase project URL
+- `SUPABASE_SERVICE_ROLE_KEY` — server-only service-role key
+- `CRON_SECRET` — random value of at least 16 characters used by Vercel Cron
+
+Never prefix a server secret with `VITE_`; Vite-prefixed variables are exposed to browser bundles.
+
+## Quality checks
+
+```bash
+npm run typecheck
+npm run build
+```
+
+## Deployment
+
+Import the repository into Vercel, add the three server-side variables above, and deploy. If any credential was previously exposed, rotate it at the provider before deploying again.
+
+## Contributing
+
+Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first. Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
+
+## License
+
+[MIT](LICENSE)

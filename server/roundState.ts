@@ -1,4 +1,4 @@
-import { Role } from '../../types.js';
+import { Role } from '../types.js';
 
 const nowIso = () => new Date().toISOString();
 

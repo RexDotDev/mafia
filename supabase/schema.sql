@@ -44,27 +44,9 @@ alter table public.rooms enable row level security;
 alter table public.players enable row level security;
 
 drop policy if exists rooms_read_all on public.rooms;
-create policy rooms_read_all on public.rooms for select using (true);
-
 drop policy if exists players_read_all on public.players;
-create policy players_read_all on public.players for select using (true);
 
-alter table public.rooms replica identity full;
-alter table public.players replica identity full;
-
-do $$
-begin
-  if not exists (
-    select 1 from pg_publication_tables
-    where pubname = 'supabase_realtime' and tablename = 'rooms'
-  ) then
-    alter publication supabase_realtime add table public.rooms;
-  end if;
-
-  if not exists (
-    select 1 from pg_publication_tables
-    where pubname = 'supabase_realtime' and tablename = 'players'
-  ) then
-    alter publication supabase_realtime add table public.players;
-  end if;
-end $$;
+-- Browser clients must not query game state directly. Serverless API routes use
+-- the service-role key and return a player-specific, filtered projection.
+revoke all on table public.rooms from anon, authenticated;
+revoke all on table public.players from anon, authenticated;

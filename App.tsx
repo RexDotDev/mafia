@@ -9,13 +9,12 @@ import {
   RoundState,
 } from './types';
 import { getRoleDescription, getRoleIcon } from './constants';
-import { supabase } from './services/supabaseClient';
 import {
   confirmRole,
   finishVoting,
+  getRoomState,
   joinRoom,
   leaveRoom,
-  pingRoom,
   resetGame,
   resolveRound,
   sendGraveyardMessage,
@@ -255,116 +254,44 @@ const App: React.FC = () => {
   }, [theme]);
 
   const loadRoomById = useCallback(async (id: string) => {
-    const { data: roomRow, error: roomError } = await supabase
-      .from('rooms')
-      .select('id, status, settings')
-      .eq('id', id)
-      .single();
-
-    if (roomError || !roomRow) {
-      console.error('Failed to load room', roomError);
-      return;
+    if (!roomCode) return;
+    try {
+      const snapshot = await getRoomState({ roomId: id, roomCode, clientId });
+      setRoom({
+        id: snapshot.id,
+        status: snapshot.status,
+        settings: normalizeSettings(snapshot.settings),
+        players: snapshot.players,
+        roundState: normalizeRoundState(snapshot.roundState),
+      });
+    } catch (error) {
+      console.error('Failed to load room state', error);
     }
-
-    const { data: playerRows, error: playerError } = await supabase
-      .from('players')
-      .select('id, client_id, name, role, has_confirmed, is_host, is_narrator')
-      .eq('room_id', id)
-      .order('created_at', { ascending: true });
-
-    if (playerError) {
-      console.error('Failed to load players', playerError);
-      return;
-    }
-
-    const players = (playerRows || []).map((player: any) => ({
-      id: player.id,
-      clientId: player.client_id,
-      name: player.name,
-      role: player.role || undefined,
-      hasConfirmed: !!player.has_confirmed,
-      isHost: !!player.is_host,
-      isNarrator: !!player.is_narrator,
-    }));
-
-    const normalizedRoundState = normalizeRoundState(roomRow.settings?.roundState);
-    const currentPlayer = players.find((player) => player.clientId === clientId);
-    const canSeeGraveyard =
-      !!currentPlayer &&
-      (!!normalizedRoundState && normalizedRoundState.eliminatedPlayerIds.includes(currentPlayer.id));
-    const canSeeMafiaChat =
-      !!currentPlayer &&
-      !!normalizedRoundState &&
-      normalizedRoundState.phase === 'night' &&
-      !normalizedRoundState.eliminatedPlayerIds.includes(currentPlayer.id) &&
-      currentPlayer.role === Role.MAFIA;
-
-    let visibleRoundState = normalizedRoundState;
-    if (visibleRoundState && !canSeeGraveyard) {
-      visibleRoundState = { ...visibleRoundState, graveyardMessages: [] };
-    }
-    if (visibleRoundState && !canSeeMafiaChat) {
-      visibleRoundState = { ...visibleRoundState, mafiaMessages: [] };
-    }
-
-    setRoom({
-      id: roomRow.id,
-      status: roomRow.status,
-      settings: normalizeSettings(roomRow.settings),
-      players,
-      roundState: visibleRoundState,
-    });
-  }, [clientId]);
+  }, [clientId, roomCode]);
 
   useEffect(() => {
     if (!roomId) return;
 
     let active = true;
-    const channel = supabase
-      .channel(`room-${roomId}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` },
-        () => {
-          if (active) loadRoomById(roomId);
-        },
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'players', filter: `room_id=eq.${roomId}` },
-        () => {
-          if (active) loadRoomById(roomId);
-        },
-      )
-      .subscribe();
-
-    loadRoomById(roomId);
-
-    return () => {
-      active = false;
-      supabase.removeChannel(channel);
-    };
-  }, [roomId, loadRoomById]);
-
-  useEffect(() => {
-    if (!roomId || !roomCode) return;
-    let active = true;
-    const sendPing = async () => {
-      if (!active) return;
+    let inFlight = false;
+    const refresh = async () => {
+      if (!active || inFlight) return;
+      inFlight = true;
       try {
-        await pingRoom({ roomCode, clientId });
-      } catch (error) {
-        console.warn('Heartbeat failed', error);
+        await loadRoomById(roomId);
+      } finally {
+        inFlight = false;
       }
     };
 
-    sendPing();
-    const interval = setInterval(sendPing, 45000);
+    refresh();
+    const interval = window.setInterval(refresh, 2000);
+
     return () => {
       active = false;
-      clearInterval(interval);
+      window.clearInterval(interval);
     };
-  }, [roomId, roomCode, clientId]);
+  }, [roomId, loadRoomById]);
 
   const me = useMemo(
     () => room?.players.find((player) => player.clientId === clientId),
@@ -2374,6 +2301,4 @@ const App: React.FC = () => {
 };
 
 export default App;
-
-
 
