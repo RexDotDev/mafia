@@ -8,6 +8,7 @@ A browser-based implementation of the Mafia party game with rooms, role assignme
 - Supabase tables have row-level security enabled and no direct browser read policy.
 - The serverless state endpoint returns a player-specific projection: a player sees their own role, Mafia teammates can see one another, and the narrator can see the full game state.
 - The cleanup cron endpoint requires Vercel's `CRON_SECRET` bearer token.
+- Public room creation and joining are rate-limited at the hosting layer, and each room accepts at most 20 players.
 - No AI provider or client-side API key is required.
 
 The browser stores a random client identifier in local storage. Treat room codes as invitations and do not reuse them for sensitive authentication.

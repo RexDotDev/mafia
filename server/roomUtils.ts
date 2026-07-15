@@ -10,6 +10,8 @@ export const DEFAULT_SETTINGS = {
   roundState: null as any,
 };
 
+export const MAX_PLAYERS_PER_ROOM = 20;
+
 export function normalizeRoomCode(code: string): string {
   return code.trim().toUpperCase();
 }
@@ -24,7 +26,10 @@ const sanitizeCustomRoles = (input: any) => {
     const key = name.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
-    const count = typeof raw?.count === 'number' ? Math.max(1, Math.min(10, raw.count)) : 1;
+    const count =
+      typeof raw?.count === 'number' && Number.isFinite(raw.count)
+        ? Math.max(1, Math.min(10, Math.floor(raw.count)))
+        : 1;
     roles.push({ name: name.slice(0, 24), count });
     if (roles.length >= 10) break;
   }
@@ -47,7 +52,10 @@ export function sanitizeSettings(input: any) {
     normalizedRoundState.gameResult !== null;
 
   return {
-    mafiaCount: typeof input?.mafiaCount === 'number' ? Math.max(1, input.mafiaCount) : DEFAULT_SETTINGS.mafiaCount,
+    mafiaCount:
+      typeof input?.mafiaCount === 'number' && Number.isFinite(input.mafiaCount)
+        ? Math.max(1, Math.min(10, Math.floor(input.mafiaCount)))
+        : DEFAULT_SETTINGS.mafiaCount,
     doctor: true,
     detective: true,
     lady: typeof input?.lady === 'boolean' ? input.lady : DEFAULT_SETTINGS.lady,

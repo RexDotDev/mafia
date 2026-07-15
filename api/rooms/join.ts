@@ -1,5 +1,9 @@
 import { supabaseAdmin } from '../../server/supabase.js';
-import { DEFAULT_SETTINGS, normalizeRoomCode, sanitizeSettings } from '../../server/roomUtils.js';
+import {
+  MAX_PLAYERS_PER_ROOM,
+  normalizeRoomCode,
+  sanitizeSettings,
+} from '../../server/roomUtils.js';
 
 const toJson = (res: any, status: number, payload: any) => {
   res.status(status).json(payload);
@@ -98,6 +102,19 @@ export default async function handler(req: any, res: any) {
 
   if (room.status !== 'waiting') {
     return toJson(res, 409, { error: 'Igra je već počela!' });
+  }
+
+  const { count: playerCount, error: countError } = await supabaseAdmin
+    .from('players')
+    .select('id', { count: 'exact', head: true })
+    .eq('room_id', room.id);
+
+  if (countError) {
+    return toJson(res, 500, { error: 'Failed to check room capacity' });
+  }
+
+  if ((playerCount ?? 0) >= MAX_PLAYERS_PER_ROOM) {
+    return toJson(res, 409, { error: `Soba je puna. Maksimum je ${MAX_PLAYERS_PER_ROOM} igrača.` });
   }
 
   if (!existingPlayer) {
