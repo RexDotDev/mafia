@@ -1,7 +1,7 @@
 import { supabaseAdmin } from '../../server/supabase.js';
 import { normalizeRoomCode, sanitizeSettings } from '../../server/roomUtils.js';
 import { normalizeRoundState } from '../../server/roundState.js';
-import { Role } from '../../types.js';
+import { normalizeRoleName, Role } from '../../types.js';
 
 const toJson = (res: any, status: number, payload: any) => {
   res.status(status).json(payload);
@@ -42,7 +42,11 @@ export default async function handler(req: any, res: any) {
     return toJson(res, 500, { error: 'Failed to load players' });
   }
 
-  const requester = players.find((player: any) => player.client_id === clientId);
+  const normalizedPlayers = players.map((player: any) => ({
+    ...player,
+    role: normalizeRoleName(player.role),
+  }));
+  const requester = normalizedPlayers.find((player: any) => player.client_id === clientId);
   if (!requester) {
     return toJson(res, 403, { error: 'Player not found' });
   }
@@ -63,7 +67,7 @@ export default async function handler(req: any, res: any) {
   const isActiveMafia =
     requester.role === Role.MAFIA && !isEliminated && roundState.phase === 'night';
 
-  const visiblePlayers = players.map((player: any) => {
+  const visiblePlayers = normalizedPlayers.map((player: any) => {
     const canSeeRole =
       isNarrator ||
       player.id === requester.id ||

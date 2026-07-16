@@ -1,5 +1,5 @@
 {
-  "name": "Mafija: Noćna Igra",
-  "description": "Interaktivna društvena igra Mafija. Okupite prijatelje, unesite šifru sobe i otkrijte ko je među vama izdajnik.",
+  "name": "Mafia Night Game",
+  "description": "A real-time browser party game with private rooms, secret roles, night actions, voting, and narrator controls.",
   "requestFramePermissions": []
 }

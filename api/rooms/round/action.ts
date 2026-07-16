@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '../../../server/supabase.js';
-import { Role } from '../../../types.js';
+import { normalizeRoleName, Role } from '../../../types.js';
 import {
   appendGraveyardMessage,
   appendMafiaMessage,
@@ -40,12 +40,12 @@ export default async function handler(req: any, res: any) {
   }
 
   if (room.status !== 'finished') {
-    return toJson(res, 409, { error: 'Akcije su dostupne tek kada igra pocne.' });
+    return toJson(res, 409, { error: 'Actions are available after the game starts.' });
   }
 
   const settings = sanitizeSettings(room.settings);
   if (settings.casualMode) {
-    return toJson(res, 409, { error: 'Kezual mod: akcije i chat su iskljuceni.' });
+    return toJson(res, 409, { error: 'Role-only mode does not use in-app actions or chat.' });
   }
   const roundState = normalizeRoundState(settings.roundState);
 
@@ -59,23 +59,24 @@ export default async function handler(req: any, res: any) {
   if (actorError || !actor) {
     return toJson(res, 404, { error: 'Player not found' });
   }
+  const actorRole = normalizeRoleName(actor.role);
 
   if (message) {
     if (chatScope === 'mafia') {
       if (roundState.gameResult) {
-        return toJson(res, 409, { error: 'Igra je zavrsena.' });
+        return toJson(res, 409, { error: 'The game is over.' });
       }
       if (roundState.phase !== 'night') {
-        return toJson(res, 409, { error: 'Mafija chat je dostupan samo nocu.' });
+        return toJson(res, 409, { error: 'Mafia chat is available only at night.' });
       }
       if (actor.is_narrator) {
-        return toJson(res, 403, { error: 'Narator nema pristup mafija chatu.' });
+        return toJson(res, 403, { error: 'The narrator cannot access Mafia chat.' });
       }
       if (roundState.eliminatedPlayerIds.includes(actor.id)) {
-        return toJson(res, 403, { error: 'Eliminisani igraci nemaju pristup mafija chatu.' });
+        return toJson(res, 403, { error: 'Eliminated players cannot access Mafia chat.' });
       }
-      if (actor.role !== Role.MAFIA) {
-        return toJson(res, 403, { error: 'Samo mafija moze pisati u mafija chat.' });
+      if (actorRole !== Role.MAFIA) {
+        return toJson(res, 403, { error: 'Only Mafia members can use Mafia chat.' });
       }
 
       const nextRoundState = appendMafiaMessage(
@@ -97,10 +98,10 @@ export default async function handler(req: any, res: any) {
     }
 
     if (actor.is_narrator) {
-      return toJson(res, 403, { error: 'Narator ne moze da pise u chat.' });
+      return toJson(res, 403, { error: 'The narrator cannot post in player chat.' });
     }
     if (!roundState.eliminatedPlayerIds.includes(actor.id)) {
-      return toJson(res, 403, { error: 'Samo eliminisani igraci mogu pisati u groblju.' });
+      return toJson(res, 403, { error: 'Only eliminated players can use the graveyard chat.' });
     }
 
     const nextRoundState = appendGraveyardMessage(
@@ -126,24 +127,24 @@ export default async function handler(req: any, res: any) {
   }
 
   if (roundState.gameResult) {
-    return toJson(res, 409, { error: 'Igra je zavrsena.' });
+    return toJson(res, 409, { error: 'The game is over.' });
   }
 
   if (roundState.phase !== 'night') {
-    return toJson(res, 409, { error: 'Nocna runda nije aktivna.' });
+    return toJson(res, 409, { error: 'There is no active night round.' });
   }
 
   if (actor.is_narrator) {
-    return toJson(res, 403, { error: 'Narator ne salje nocne akcije.' });
+    return toJson(res, 403, { error: 'The narrator does not submit night actions.' });
   }
 
   if (roundState.eliminatedPlayerIds.includes(actor.id)) {
-    return toJson(res, 403, { error: 'Eliminisani igraci ne mogu da igraju akcije.' });
+    return toJson(res, 403, { error: 'Eliminated players cannot submit actions.' });
   }
 
-  const actionType = getActionTypeForRole(actor.role);
+  const actionType = getActionTypeForRole(actorRole);
   if (!actionType) {
-    return toJson(res, 403, { error: 'Ova uloga nema nocnu akciju.' });
+    return toJson(res, 403, { error: 'This role does not have a night action.' });
   }
 
   const { data: target, error: targetError } = await supabaseAdmin
@@ -154,11 +155,11 @@ export default async function handler(req: any, res: any) {
     .maybeSingle();
 
   if (targetError || !target || target.is_narrator) {
-    return toJson(res, 404, { error: 'Neispravan cilj akcije.' });
+    return toJson(res, 404, { error: 'Invalid action target.' });
   }
 
   if (roundState.eliminatedPlayerIds.includes(target.id)) {
-    return toJson(res, 409, { error: 'Cilj je vec eliminisan.' });
+    return toJson(res, 409, { error: 'That player has already been eliminated.' });
   }
 
   const nextActions = roundState.actions
@@ -166,7 +167,7 @@ export default async function handler(req: any, res: any) {
     .concat({
       actorId: actor.id,
       actorName: actor.name,
-      role: actor.role,
+      role: actorRole || '',
       type: actionType,
       targetId: target.id,
       targetName: target.name,

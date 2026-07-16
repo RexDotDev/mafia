@@ -1,7 +1,7 @@
 import { supabaseAdmin } from '../../../server/supabase.js';
 import { appendRoundEvent, normalizeRoundState } from '../../../server/roundState.js';
 import { normalizeRoomCode, sanitizeSettings } from '../../../server/roomUtils.js';
-import { Role } from '../../../types.js';
+import { normalizeRoleName, Role } from '../../../types.js';
 
 const toJson = (res: any, status: number, payload: any) => {
   res.status(status).json(payload);
@@ -41,7 +41,7 @@ export default async function handler(req: any, res: any) {
   }
 
   if (room.status !== 'finished') {
-    return toJson(res, 409, { error: 'Glasanje je dostupno tek kada igra pocne.' });
+    return toJson(res, 409, { error: 'Voting is available after the game starts.' });
   }
 
   const { data: voter, error: voterError } = await supabaseAdmin
@@ -56,19 +56,19 @@ export default async function handler(req: any, res: any) {
   }
 
   if (voter.is_narrator) {
-    return toJson(res, 403, { error: 'Narator ne glasa.' });
+    return toJson(res, 403, { error: 'The narrator does not vote.' });
   }
 
   const settings = sanitizeSettings(room.settings);
   if (settings.casualMode) {
-    return toJson(res, 409, { error: 'Kezual mod: glasanje u aplikaciji je iskljuceno.' });
+    return toJson(res, 409, { error: 'Role-only mode does not use in-app voting.' });
   }
   const roundState = normalizeRoundState(settings.roundState);
   if (roundState.gameResult) {
-    return toJson(res, 409, { error: 'Igra je vec zavrsena.' });
+    return toJson(res, 409, { error: 'The game is already over.' });
   }
   if (roundState.phase !== 'voting') {
-    return toJson(res, 409, { error: 'Glasanje nije aktivno.' });
+    return toJson(res, 409, { error: 'Voting is not active.' });
   }
 
   const { data: players, error: playersError } = await supabaseAdmin
@@ -80,21 +80,25 @@ export default async function handler(req: any, res: any) {
     return toJson(res, 500, { error: 'Failed to load players' });
   }
 
-  const alivePlayers = players.filter(
+  const normalizedPlayers = players.map((player: any) => ({
+    ...player,
+    role: normalizeRoleName(player.role),
+  }));
+  const alivePlayers = normalizedPlayers.filter(
     (player: any) => !player.is_narrator && !roundState.eliminatedPlayerIds.includes(player.id),
   );
 
   if (!alivePlayers.find((player: any) => player.id === voter.id)) {
-    return toJson(res, 403, { error: 'Eliminisani igraci ne mogu da glasaju.' });
+    return toJson(res, 403, { error: 'Eliminated players cannot vote.' });
   }
 
   if (!targetId) {
-    return toJson(res, 400, { error: 'Izaberi igraca za glasanje.' });
+    return toJson(res, 400, { error: 'Choose a player before submitting your vote.' });
   }
 
   const target = alivePlayers.find((player: any) => player.id === targetId);
   if (!target) {
-    return toJson(res, 404, { error: 'Neispravan igrac za glasanje.' });
+    return toJson(res, 404, { error: 'Invalid voting target.' });
   }
 
   const nextVotes = roundState.votes
@@ -151,13 +155,17 @@ export default async function handler(req: any, res: any) {
     ? Array.from(new Set([...roundState.eliminatedPlayerIds, eliminated.playerId]))
     : roundState.eliminatedPlayerIds;
 
-  let eventMessage = 'U glasanju niko nije izbacen.';
+  let eventMessage = 'No player was eliminated in the vote.';
   if (eliminated) {
-    eventMessage = `Glasanjem je izbacen ${eliminated.playerName} sa ${eliminated.votes} glas${eliminated.votes === 1 ? 'om' : 'a'}.`;
+    eventMessage = `${eliminated.playerName} was eliminated with ${eliminated.votes} ${
+      eliminated.votes === 1 ? 'vote' : 'votes'
+    }.`;
   } else if (topVotes > 0) {
-    eventMessage = `Glasanje je nereseno (${topVotes} glas${topVotes === 1 ? '' : 'a'}). Niko nije izbacen.`;
+    eventMessage = `The vote ended in a tie at ${topVotes} ${
+      topVotes === 1 ? 'vote' : 'votes'
+    }. No player was eliminated.`;
   }
-  const aliveAfterVote = players.filter(
+  const aliveAfterVote = normalizedPlayers.filter(
     (player: any) => !player.is_narrator && !nextEliminated.includes(player.id),
   );
   const winner = evaluateWinner(aliveAfterVote);
@@ -178,7 +186,7 @@ export default async function handler(req: any, res: any) {
       gameResult: winner
         ? {
             winner,
-            message: winner === 'city' ? 'Grad je pobedio.' : 'Mafija je pobedila.',
+            message: winner === 'city' ? 'The town wins.' : 'The Mafia wins.',
             round: roundState.round,
             createdAt: new Date().toISOString(),
           }
@@ -194,7 +202,7 @@ export default async function handler(req: any, res: any) {
       nextState,
       roundState.round,
       'note',
-      winner === 'city' ? 'Kraj igre: grad je pobedio.' : 'Kraj igre: mafija je pobedila.',
+      winner === 'city' ? 'Game over: the town wins.' : 'Game over: the Mafia wins.',
     );
   }
 

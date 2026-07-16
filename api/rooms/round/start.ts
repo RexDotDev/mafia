@@ -31,7 +31,7 @@ export default async function handler(req: any, res: any) {
   }
 
   if (room.status !== 'finished') {
-    return toJson(res, 409, { error: 'Runda moze da krene tek kada svi potvrde uloge.' });
+    return toJson(res, 409, { error: 'The round can start after every player confirms their role.' });
   }
 
   const { data: player, error: playerError } = await supabaseAdmin
@@ -46,22 +46,22 @@ export default async function handler(req: any, res: any) {
   }
 
   if (!player.is_narrator) {
-    return toJson(res, 403, { error: 'Samo narator moze da pokrene rundu.' });
+    return toJson(res, 403, { error: 'Only the narrator can start a round.' });
   }
 
   const settings = sanitizeSettings(room.settings);
   if (settings.casualMode) {
-    return toJson(res, 409, { error: 'Kezual mod: nocne runde su iskljucene.' });
+    return toJson(res, 409, { error: 'Role-only mode does not use in-app night rounds.' });
   }
   const currentState = normalizeRoundState(settings.roundState);
   if (currentState.gameResult) {
-    return toJson(res, 409, { error: 'Igra je zavrsena. Pokreni novu podelu uloga.' });
+    return toJson(res, 409, { error: 'The game is over. Start a new role assignment.' });
   }
   if (currentState.phase === 'night') {
-    return toJson(res, 409, { error: 'Nocna runda je vec u toku.' });
+    return toJson(res, 409, { error: 'A night round is already in progress.' });
   }
   if (currentState.phase === 'voting') {
-    return toJson(res, 409, { error: 'Glasanje jos traje.' });
+    return toJson(res, 409, { error: 'Voting is still in progress.' });
   }
 
   const nextRound = currentState.round + 1;
@@ -76,7 +76,7 @@ export default async function handler(req: any, res: any) {
     gameResult: null,
     mafiaMessages: [],
   };
-  nextState = appendRoundEvent(nextState, nextRound, 'round_started', `Runda ${nextRound} je pokrenuta.`);
+  nextState = appendRoundEvent(nextState, nextRound, 'round_started', `Round ${nextRound} started.`);
 
   const { error: updateError } = await supabaseAdmin
     .from('rooms')
