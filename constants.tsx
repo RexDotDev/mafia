@@ -2,12 +2,12 @@ import React from 'react';
 import { Role } from './types';
 
 export const ROLE_DESCRIPTIONS: Record<Role, string> = {
-  [Role.MAFIA]: 'Vaš cilj je da eliminišete sve građane bez da budete otkriveni. Svake noći birate jednu žrtvu.',
-  [Role.VILLAGER]: 'Vaš cilj je da otkrijete i glasanjem eliminišete sve članove mafije pre nego što oni preuzmu grad.',
-  [Role.DOCTOR]: 'Svake noći birate jednu osobu (ili sebe) koju želite da zaštitite od napada mafije.',
-  [Role.DETECTIVE]: 'Svake noći birate jednog igrača čiji identitet želite da proverite.',
-  [Role.LADY]: 'Dama ima poseban uticaj u igri i donosi dodatnu dinamiku.',
-  [Role.NARRATOR]: 'Narator vodi igru, vidi sve uloge i ne ucestvuje.'
+  [Role.MAFIA]: 'Eliminate the townspeople without being discovered. Choose one target with your team each night.',
+  [Role.VILLAGER]: 'Identify and vote out every Mafia member before they take control of the town.',
+  [Role.DOCTOR]: 'Choose one player, including yourself, to protect from the Mafia each night.',
+  [Role.DETECTIVE]: 'Investigate one player each night to learn whether they belong to the Mafia.',
+  [Role.LADY]: 'Silence one player each night and block their night action for that round.',
+  [Role.NARRATOR]: 'Guide the game, see every role, and manage rounds without taking part in votes.'
 };
 
 export const ROLE_ICONS: Record<Role, React.ReactNode> = {
@@ -20,7 +20,7 @@ export const ROLE_ICONS: Record<Role, React.ReactNode> = {
 };
 
 export const DEFAULT_ROLE_ICON = <i className="fas fa-user-tag text-slate-500"></i>;
-export const DEFAULT_ROLE_DESCRIPTION = 'Posebna uloga.';
+export const DEFAULT_ROLE_DESCRIPTION = 'A custom role chosen by the host.';
 
 export const getRoleIcon = (role?: string) => ROLE_ICONS[role as Role] ?? DEFAULT_ROLE_ICON;
 export const getRoleDescription = (role?: string) => ROLE_DESCRIPTIONS[role as Role] ?? DEFAULT_ROLE_DESCRIPTION;

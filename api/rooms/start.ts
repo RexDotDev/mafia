@@ -65,14 +65,14 @@ export default async function handler(req: any, res: any) {
     .order('created_at', { ascending: true });
 
   if (playersError || !players || players.length < 2) {
-    return toJson(res, 400, { error: 'Potrebno je bar 2 igraca.' });
+    return toJson(res, 400, { error: 'At least 2 players are required.' });
   }
 
   const narrator = players[Math.floor(Math.random() * players.length)];
   const participants = players.filter((player) => player.id !== narrator.id);
 
   if (participants.length === 0) {
-    return toJson(res, 400, { error: 'Potrebno je bar 2 igraca.' });
+    return toJson(res, 400, { error: 'At least 2 players are required.' });
   }
 
   const settings = sanitizeSettings(room.settings);

@@ -47,7 +47,7 @@ export default async function handler(req: any, res: any) {
 
   if (!room) {
     if (!settingsInput) {
-      return toJson(res, 404, { error: 'Soba ne postoji.' });
+    return toJson(res, 404, { error: 'Room not found.' });
     }
     const settings = sanitizeSettings(settingsInput);
     const { data: createdRoom, error: createRoomError } = await supabaseAdmin
@@ -101,7 +101,7 @@ export default async function handler(req: any, res: any) {
   }
 
   if (room.status !== 'waiting') {
-    return toJson(res, 409, { error: 'Igra je već počela!' });
+    return toJson(res, 409, { error: 'The game has already started.' });
   }
 
   const { count: playerCount, error: countError } = await supabaseAdmin
@@ -114,7 +114,7 @@ export default async function handler(req: any, res: any) {
   }
 
   if ((playerCount ?? 0) >= MAX_PLAYERS_PER_ROOM) {
-    return toJson(res, 409, { error: `Soba je puna. Maksimum je ${MAX_PLAYERS_PER_ROOM} igrača.` });
+    return toJson(res, 409, { error: `This room is full. The maximum is ${MAX_PLAYERS_PER_ROOM} players.` });
   }
 
   if (!existingPlayer) {

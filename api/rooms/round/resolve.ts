@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '../../../server/supabase.js';
-import { Role } from '../../../types.js';
+import { normalizeRoleName, Role } from '../../../types.js';
 import { appendRoundEvent, createDefaultRoundResult, normalizeRoundState } from '../../../server/roundState.js';
 import { normalizeRoomCode, sanitizeSettings } from '../../../server/roomUtils.js';
 
@@ -80,7 +80,7 @@ export default async function handler(req: any, res: any) {
   }
 
   if (!narrator.is_narrator) {
-    return toJson(res, 403, { error: 'Samo narator moze da zakljuci noc.' });
+    return toJson(res, 403, { error: 'Only the narrator can resolve the night.' });
   }
 
   const { data: players, error: playersError } = await supabaseAdmin
@@ -94,17 +94,19 @@ export default async function handler(req: any, res: any) {
 
   const settings = sanitizeSettings(room.settings);
   if (settings.casualMode) {
-    return toJson(res, 409, { error: 'Kezual mod: nocno razresavanje je iskljuceno.' });
+    return toJson(res, 409, { error: 'Role-only mode does not use in-app night resolution.' });
   }
   const roundState = normalizeRoundState(settings.roundState);
   if (roundState.gameResult) {
-    return toJson(res, 409, { error: 'Igra je vec zavrsena.' });
+    return toJson(res, 409, { error: 'The game is already over.' });
   }
   if (roundState.phase !== 'night') {
-    return toJson(res, 409, { error: 'Nocna runda nije aktivna.' });
+    return toJson(res, 409, { error: 'There is no active night round.' });
   }
 
-  const activePlayers = players.filter((player: any) => !player.is_narrator);
+  const activePlayers = players
+    .filter((player: any) => !player.is_narrator)
+    .map((player: any) => ({ ...player, role: normalizeRoleName(player.role) }));
   const aliveIds = new Set(
     activePlayers
       .map((player: any) => player.id)
@@ -197,7 +199,7 @@ export default async function handler(req: any, res: any) {
     gameResult: winner
       ? {
           winner,
-          message: winner === 'city' ? 'Grad je pobedio.' : 'Mafija je pobedila.',
+          message: winner === 'city' ? 'The town wins.' : 'The Mafia wins.',
           round: roundState.round,
           createdAt: new Date().toISOString(),
         }
@@ -209,7 +211,7 @@ export default async function handler(req: any, res: any) {
       nextState,
       roundState.round,
       'lady_silence',
-      `Dama je ucutkala ${latestLadyAction.targetName}.`,
+      `The Silencer blocked ${latestLadyAction.targetName}'s night action.`,
     );
   }
 
@@ -218,8 +220,8 @@ export default async function handler(req: any, res: any) {
       nextState,
       roundState.round,
       'detective_check',
-      `Inspektor je proverio ${latestInspectorAction.targetName} - ${
-        inspectorIsMafia ? 'mafijas' : 'nije mafijas'
+      `The Detective investigated ${latestInspectorAction.targetName}: ${
+        inspectorIsMafia ? 'Mafia' : 'not Mafia'
       }.`,
     );
   }
@@ -230,8 +232,8 @@ export default async function handler(req: any, res: any) {
       roundState.round,
       'doctor_heal',
       doctorSaved
-        ? `Lekar je uspesno izlecio ${latestDoctorAction.targetName}.`
-        : `Lekar je lecio ${latestDoctorAction.targetName}, ali bez spasavanja.`,
+        ? `The Doctor saved ${latestDoctorAction.targetName}.`
+        : `The Doctor protected ${latestDoctorAction.targetName}, but no rescue was needed.`,
     );
   }
 
@@ -241,11 +243,11 @@ export default async function handler(req: any, res: any) {
       roundState.round,
       'mafia_kill',
       killedPlayerId
-        ? `Mafija je ubila ${mafiaAction.targetName}.`
-        : `Mafija je napala ${mafiaAction.targetName}, ali je meta prezivela.`,
+        ? `The Mafia eliminated ${mafiaAction.targetName}.`
+        : `The Mafia targeted ${mafiaAction.targetName}, but the player survived.`,
     );
   } else {
-    nextState = appendRoundEvent(nextState, roundState.round, 'mafia_kill', 'Mafija nije izvrsila ubistvo.');
+    nextState = appendRoundEvent(nextState, roundState.round, 'mafia_kill', 'The Mafia did not submit a valid target.');
   }
 
   if (!shouldOpenVoting && !winner) {
@@ -253,7 +255,7 @@ export default async function handler(req: any, res: any) {
       nextState,
       roundState.round,
       'vote_elimination',
-      'Nema zivih igraca za glasanje. Runda je automatski zavrsena.',
+      'No living players remain for voting. The round ended automatically.',
     );
   }
 
@@ -262,7 +264,7 @@ export default async function handler(req: any, res: any) {
       nextState,
       roundState.round,
       'note',
-      winner === 'city' ? 'Kraj igre: grad je pobedio.' : 'Kraj igre: mafija je pobedila.',
+      winner === 'city' ? 'Game over: the town wins.' : 'Game over: the Mafia wins.',
     );
   }
 

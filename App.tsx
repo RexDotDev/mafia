@@ -202,7 +202,7 @@ type EntryMode = 'join' | 'create';
 type ThemeMode = 'light' | 'dark';
 
 const generateRoomCode = () => Math.floor(100000 + Math.random() * 900000).toString();
-const SESSION_KEY = 'mafia_session_v1';
+const SESSION_KEY = 'mafia_session_v2';
 const THEME_KEY = 'mafia_theme_v1';
 
 const App: React.FC = () => {
@@ -349,7 +349,7 @@ const App: React.FC = () => {
       if (options?.silent) {
         throw error;
       }
-      setErrorMessage(error?.message || 'NeuspeÅ¡no pridruÅ¾ivanje.');
+      setErrorMessage(error?.message || 'Could not join the room.');
     } finally {
       setIsBusy(false);
     }
@@ -359,7 +359,7 @@ const App: React.FC = () => {
     if (!playerName.trim() || !roomCode.trim()) return;
     const normalizedCode = roomCode.replace(/\D/g, '').slice(0, 6);
     if (normalizedCode.length !== 6) {
-      setErrorMessage('Unesi šifru od 6 cifara.');
+      setErrorMessage('Enter a 6-digit room code.');
       return;
     }
     const settings = entryMode === 'create' ? draftSettings : undefined;
@@ -373,7 +373,7 @@ const App: React.FC = () => {
     try {
       await startGame({ roomCode, clientId });
     } catch (error: any) {
-      setErrorMessage(error?.message || 'Neuspešan start.');
+      setErrorMessage(error?.message || 'Could not start the game.');
     } finally {
       setIsBusy(false);
     }
@@ -386,7 +386,7 @@ const App: React.FC = () => {
     try {
       await confirmRole({ roomCode, clientId });
     } catch (error: any) {
-      setErrorMessage(error?.message || 'Neuspešna potvrda.');
+      setErrorMessage(error?.message || 'Could not confirm your role.');
     } finally {
       setIsBusy(false);
     }
@@ -407,7 +407,7 @@ const App: React.FC = () => {
         },
       });
     } catch (error: any) {
-      setErrorMessage(error?.message || 'Neuspešna promena podešavanja.');
+      setErrorMessage(error?.message || 'Could not update the room settings.');
     } finally {
       setIsBusy(false);
     }
@@ -421,7 +421,7 @@ const App: React.FC = () => {
       await startRound({ roomCode, clientId });
       setVoteTargetId('');
     } catch (error: any) {
-      setErrorMessage(error?.message || 'Neuspesno pokretanje runde.');
+      setErrorMessage(error?.message || 'Could not start the round.');
     } finally {
       setIsBusy(false);
     }
@@ -434,7 +434,7 @@ const App: React.FC = () => {
     try {
       await submitRoundAction({ roomCode, clientId, targetId: nightTargetId });
     } catch (error: any) {
-      setErrorMessage(error?.message || 'Neuspesno slanje akcije.');
+      setErrorMessage(error?.message || 'Could not submit the action.');
     } finally {
       setIsBusy(false);
     }
@@ -447,7 +447,7 @@ const App: React.FC = () => {
     try {
       await resolveRound({ roomCode, clientId });
     } catch (error: any) {
-      setErrorMessage(error?.message || 'Neuspesno zakljucivanje noci.');
+      setErrorMessage(error?.message || 'Could not resolve the night.');
     } finally {
       setIsBusy(false);
     }
@@ -464,7 +464,7 @@ const App: React.FC = () => {
         targetId: voteTargetId,
       });
     } catch (error: any) {
-      setErrorMessage(error?.message || 'Neuspesno slanje glasa.');
+      setErrorMessage(error?.message || 'Could not submit the vote.');
     } finally {
       setIsBusy(false);
     }
@@ -482,7 +482,7 @@ const App: React.FC = () => {
       });
       setGraveyardDraftMessage('');
     } catch (error: any) {
-      setErrorMessage(error?.message || 'Neuspesno slanje poruke u groblje.');
+      setErrorMessage(error?.message || 'Could not send the graveyard message.');
     } finally {
       setIsBusy(false);
     }
@@ -500,7 +500,7 @@ const App: React.FC = () => {
       });
       setMafiaDraftMessage('');
     } catch (error: any) {
-      setErrorMessage(error?.message || 'Neuspesno slanje poruke u mafija chat.');
+      setErrorMessage(error?.message || 'Could not send the Mafia message.');
     } finally {
       setIsBusy(false);
     }
@@ -521,7 +521,7 @@ const App: React.FC = () => {
         },
       });
     } catch (error: any) {
-      setErrorMessage(error?.message || 'NeuspeÅ¡na promena podeÅ¡avanja.');
+      setErrorMessage(error?.message || 'Could not update the room settings.');
     } finally {
       setIsBusy(false);
     }
@@ -542,7 +542,7 @@ const App: React.FC = () => {
         },
       });
     } catch (error: any) {
-      setErrorMessage(error?.message || 'Neuspesna promena moda.');
+      setErrorMessage(error?.message || 'Could not change the game mode.');
     } finally {
       setIsBusy(false);
     }
@@ -567,7 +567,7 @@ const App: React.FC = () => {
       setCustomRoleName('');
       setCustomRoleCount(1);
     } catch (error: any) {
-      setErrorMessage(error?.message || 'NeuspeÅ¡na promena podeÅ¡avanja.');
+      setErrorMessage(error?.message || 'Could not update the room settings.');
     } finally {
       setIsBusy(false);
     }
@@ -591,7 +591,7 @@ const App: React.FC = () => {
         },
       });
     } catch (error: any) {
-      setErrorMessage(error?.message || 'NeuspeÅ¡na promena podeÅ¡avanja.');
+      setErrorMessage(error?.message || 'Could not update the room settings.');
     } finally {
       setIsBusy(false);
     }
@@ -612,7 +612,7 @@ const App: React.FC = () => {
         },
       });
     } catch (error: any) {
-      setErrorMessage(error?.message || 'NeuspeÅ¡na promena podeÅ¡avanja.');
+      setErrorMessage(error?.message || 'Could not update the room settings.');
     } finally {
       setIsBusy(false);
     }
@@ -836,8 +836,8 @@ const App: React.FC = () => {
       type="button"
       onClick={handleThemeToggle}
       className="hidden md:flex fixed right-4 top-4 sm:right-6 sm:top-6 z-50 h-11 w-11 items-center justify-center rounded-full border border-[color:var(--line)] bg-[var(--surface-strong)] text-[color:var(--ink)] hover:opacity-80 transition"
-      aria-label="Promeni temu"
-      title={theme === 'light' ? 'Tamna tema' : 'Svetla tema'}
+      aria-label="Change theme"
+      title={theme === 'light' ? 'Use dark theme' : 'Use light theme'}
     >
       <i className={`fas ${theme === 'light' ? 'fa-moon' : 'fa-sun'}`}></i>
     </button>
@@ -848,8 +848,8 @@ const App: React.FC = () => {
       type="button"
       onClick={handleThemeToggle}
       className="md:hidden h-10 w-10 rounded-full border border-[color:var(--line)] bg-[var(--surface-strong)] text-[color:var(--ink)] hover:opacity-80 transition"
-      aria-label="Promeni temu"
-      title={theme === 'light' ? 'Tamna tema' : 'Svetla tema'}
+      aria-label="Change theme"
+      title={theme === 'light' ? 'Use dark theme' : 'Use light theme'}
     >
       <i className={`fas ${theme === 'light' ? 'fa-moon' : 'fa-sun'}`}></i>
     </button>
@@ -906,7 +906,7 @@ const App: React.FC = () => {
     try {
       await resetGame({ roomCode, clientId });
     } catch (error: any) {
-      setErrorMessage(error?.message || 'Neuspešno resetovanje.');
+      setErrorMessage(error?.message || 'Could not reset the game.');
     } finally {
       setIsBusy(false);
     }
@@ -962,16 +962,16 @@ const App: React.FC = () => {
         >
           <div>
             <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">
-              Rezultat glasanja
+              Voting result
             </p>
             <h3 className="mt-1 title-font text-2xl text-[color:var(--ink)]">
               {lastVoteSummary.eliminatedPlayerName
-                ? `Izbacen je ${lastVoteSummary.eliminatedPlayerName}`
-                : 'Niko nije izbacen'}
+                ? `${lastVoteSummary.eliminatedPlayerName} was eliminated`
+                : 'No player was eliminated'}
             </h3>
           </div>
           <div className="text-xs text-[color:var(--ink-muted)]">
-            Glasalo: {lastVoteSummary.completedVoters}/{lastVoteSummary.totalVoters}
+            Votes submitted: {lastVoteSummary.completedVoters}/{lastVoteSummary.totalVoters}
           </div>
           <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1">
             {lastVoteSummary.voteCounts.map((entry) => (
@@ -988,7 +988,7 @@ const App: React.FC = () => {
             onClick={closeVoteSummaryModal}
             className="w-full rounded-xl bg-[var(--ink)] py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90"
           >
-            U redu
+            Continue
           </button>
         </div>
       </div>
@@ -1005,7 +1005,7 @@ const App: React.FC = () => {
   const renderGameResultModal = () => {
     if (room?.status !== 'finished' || !gameResult || !showGameResultModal) return null;
 
-    const title = gameResult.winner === 'city' ? 'Grad je pobedio' : 'Mafija je pobedila';
+    const title = gameResult.winner === 'city' ? 'The town wins' : 'The Mafia wins';
     return (
       <div
         className="fixed inset-0 z-[90] flex items-center justify-center bg-black/65 px-4 py-6"
@@ -1015,7 +1015,7 @@ const App: React.FC = () => {
           className="w-full max-w-md rounded-3xl border border-[color:var(--line)] bg-[var(--surface)] p-6 text-center shadow-2xl"
           onClick={(event) => event.stopPropagation()}
         >
-          <p className="text-[10px] uppercase tracking-[0.24em] text-[color:var(--ink-faint)]">Kraj igre</p>
+          <p className="text-[10px] uppercase tracking-[0.24em] text-[color:var(--ink-faint)]">Game over</p>
           <h3 className="mt-2 title-font text-3xl text-[color:var(--ink)]">{title}</h3>
           <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
             {gameResult.message || title}
@@ -1024,7 +1024,7 @@ const App: React.FC = () => {
             onClick={closeGameResultModal}
             className="mt-5 w-full rounded-xl bg-[var(--ink)] py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90"
           >
-            U redu
+            Continue
           </button>
         </div>
       </div>
@@ -1039,11 +1039,11 @@ const App: React.FC = () => {
         <div className="w-full max-w-3xl rounded-3xl border border-[color:var(--line)] bg-[var(--surface)] p-5 shadow-2xl">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Mafija chat</p>
-              <h3 className="title-font text-2xl text-[color:var(--ink)]">Dogovor mafije</h3>
+              <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Mafia chat</p>
+              <h3 className="title-font text-2xl text-[color:var(--ink)]">Choose a target together</h3>
             </div>
             <span className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--ink-soft)]">
-              Runda {roundState?.round || 0}
+              Round {roundState?.round || 0}
             </span>
           </div>
 
@@ -1074,7 +1074,7 @@ const App: React.FC = () => {
                 );
               })
             ) : (
-              <p className="text-xs text-[color:var(--ink-soft)]">Nema poruka u mafija chatu.</p>
+              <p className="text-xs text-[color:var(--ink-soft)]">No Mafia messages yet.</p>
             )}
           </div>
 
@@ -1082,7 +1082,7 @@ const App: React.FC = () => {
             <textarea
               value={mafiaDraftMessage}
               onChange={(event) => setMafiaDraftMessage(event.target.value)}
-              placeholder="Poruka za mafiju..."
+              placeholder="Message your Mafia team..."
               className="min-h-[82px] w-full resize-y rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-sm text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
             />
             <button
@@ -1090,18 +1090,18 @@ const App: React.FC = () => {
               disabled={isBusy || !mafiaDraftMessage.trim()}
               className="w-full rounded-xl bg-[var(--ink)] px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60 sm:w-auto sm:min-h-[82px]"
             >
-              Posalji
+              Send
             </button>
           </div>
 
           <div className="mt-4 rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-3 space-y-2">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]">Odabir mete</p>
+            <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]">Target selection</p>
             <select
               value={nightTargetId}
               onChange={(event) => setNightTargetId(event.target.value)}
               className="w-full rounded-xl border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[color:var(--ink)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
             >
-              <option value="">Izaberi igraca</option>
+              <option value="">Choose a player</option>
               {availableNightTargets.map((player) => (
                 <option key={player.id} value={player.id}>
                   {player.name}
@@ -1113,10 +1113,10 @@ const App: React.FC = () => {
               disabled={isBusy || !nightTargetId}
               className="w-full rounded-xl bg-[var(--ink)] py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
             >
-              Potvrdi metu
+              Confirm target
             </button>
             {mySubmittedAction && (
-              <p className="text-xs text-[color:var(--ink-muted)]">Poslednji izbor: {mySubmittedAction.targetName}</p>
+              <p className="text-xs text-[color:var(--ink-muted)]">Last selection: {mySubmittedAction.targetName}</p>
             )}
           </div>
         </div>
@@ -1127,13 +1127,13 @@ const App: React.FC = () => {
   const narratorPanel = (
     <div className="text-center space-y-5 sm:space-y-6 py-2">
       <div>
-        <h2 className="title-font text-3xl text-[color:var(--ink)]">Narator</h2>
+        <h2 className="title-font text-3xl text-[color:var(--ink)]">Narrator</h2>
         <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-          Ti vodis igru. Imas pregled svih uloga i ne ucestvujes u glasanjima.
+          You guide the game, see every role, and manage rounds without voting.
         </p>
         {room?.status === 'finished' && (
           <p className="mt-2 text-xs uppercase tracking-[0.3em] text-emerald-600">
-            {isCasualMode ? 'Kezual mod je aktivan' : `Svi su videli uloge. Runda ${roundState?.round || 0}`}
+            {isCasualMode ? 'Role-only mode is active' : `Everyone has seen their role. Round ${roundState?.round || 0}`}
           </p>
         )}
       </div>
@@ -1142,27 +1142,27 @@ const App: React.FC = () => {
         <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-3 text-left">
           <div className="flex items-center justify-between">
             <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">
-              {isCasualMode ? 'Kezual mod' : 'Kontrola runde'}
+              {isCasualMode ? 'Role-only mode' : 'Round controls'}
             </p>
             <span className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--ink-soft)]">
-              {isCasualMode ? 'Bez gameplay-a u aplikaciji' : `Faza: ${roundState?.phase || 'idle'}`}
+              {isCasualMode ? 'Continue the game in person' : `Phase: ${roundState?.phase || 'idle'}`}
             </span>
           </div>
 
           <div className="text-xs text-[color:var(--ink-muted)]">
-            Aktivnih igraca: {alivePlayers.length}
+            Active players: {alivePlayers.length}
           </div>
           <div className="text-xs text-[color:var(--ink-muted)]">
-            Zivi: {alivePlayers.length ? alivePlayers.map((player) => player.name).join(', ') : 'nema'}
+            Alive: {alivePlayers.length ? alivePlayers.map((player) => player.name).join(', ') : 'none'}
           </div>
           {gameResult && (
             <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-xs text-[color:var(--ink-muted)]">
-              Igra je zavrsena: {gameResult.winner === 'city' ? 'Grad je pobedio.' : 'Mafija je pobedila.'}
+              Game over: {gameResult.winner === 'city' ? 'The town wins.' : 'The Mafia wins.'}
             </div>
           )}
           {isCasualMode && (
             <p className="text-xs text-[color:var(--ink-muted)]">
-              Ovaj mod sluzi samo za dodelu i pregled uloga. Sva nocna igra, glasanje i chat su van aplikacije.
+              This mode only assigns and reveals roles. Night actions, discussion, and voting happen in person.
             </p>
           )}
 
@@ -1172,7 +1172,7 @@ const App: React.FC = () => {
               disabled={isBusy}
               className="w-full rounded-xl bg-[var(--ink)] py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
             >
-              Pokreni nocnu rundu
+              Start night round
             </button>
           )}
 
@@ -1182,23 +1182,23 @@ const App: React.FC = () => {
               disabled={isBusy}
               className="w-full rounded-xl bg-[var(--ink)] py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
             >
-              Zakljuci noc
+              Resolve night
             </button>
           )}
 
           {!isCasualMode && !gameResult && roundState?.phase === 'voting' && (
             <div className="space-y-2">
               <div className="text-xs text-[color:var(--ink-muted)]">
-                Glasalo: {votedPlayers.length}/{alivePlayers.length}
+                Votes submitted: {votedPlayers.length}/{alivePlayers.length}
               </div>
               <div className="text-xs text-[color:var(--ink-muted)]">
-                Potvrdili glas: {votedPlayers.length ? votedPlayers.map((player) => player.name).join(', ') : 'niko'}
+                Voted: {votedPlayers.length ? votedPlayers.map((player) => player.name).join(', ') : 'nobody'}
               </div>
               <div className="text-xs text-[color:var(--ink-muted)]">
-                Cekamo: {pendingVoters.length ? pendingVoters.map((player) => player.name).join(', ') : 'svi su glasali'}
+                Waiting for: {pendingVoters.length ? pendingVoters.map((player) => player.name).join(', ') : 'all votes are in'}
               </div>
               <p className="text-[11px] text-[color:var(--ink-soft)]">
-                Kada svi zivi igraci potvrde glas, rezultat se automatski prikazuje svima.
+                The result appears automatically after every living player submits a vote.
               </p>
             </div>
           )}
@@ -1207,50 +1207,50 @@ const App: React.FC = () => {
 
       {!isCasualMode && room?.status === 'finished' && roundState?.phase === 'night' && (
         <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2 text-left">
-          <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Akcije ove noci</p>
+          <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Tonight's actions</p>
           <div className="text-xs text-[color:var(--ink-muted)]">
-            Mafija cilja:{' '}
+            Mafia targets:{' '}
             {roundActionSummary.mafia.length
               ? roundActionSummary.mafia.map((item) => item.targetName).join(', ')
-              : 'nema odabira'}
+              : 'no selection'}
           </div>
           <div className="text-xs text-[color:var(--ink-muted)]">
-            Dama ucutkava: {roundActionSummary.lady?.targetName || 'nema odabira'}
+            Silencer blocks: {roundActionSummary.lady?.targetName || 'no selection'}
           </div>
           <div className="text-xs text-[color:var(--ink-muted)]">
-            Lekar leci: {roundActionSummary.doctor?.targetName || 'nema odabira'}
+            Doctor protects: {roundActionSummary.doctor?.targetName || 'no selection'}
           </div>
           <div className="text-xs text-[color:var(--ink-muted)]">
-            Inspektor proverava: {roundInspectorPreview?.targetName || roundActionSummary.detective?.targetName || 'nema odabira'}
-            {roundInspectorPreview && ` (${roundInspectorPreview.isMafia ? 'mafijas' : 'nije mafijas'})`}
+            Detective investigates: {roundInspectorPreview?.targetName || roundActionSummary.detective?.targetName || 'no selection'}
+            {roundInspectorPreview && ` (${roundInspectorPreview.isMafia ? 'Mafia' : 'not Mafia'})`}
           </div>
         </div>
       )}
 
       {!isCasualMode && room?.status === 'finished' && roundState?.lastResult && (
         <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2 text-left">
-          <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Ishod prethodne noci</p>
+          <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Previous night</p>
           <div className="text-xs text-[color:var(--ink-muted)]">
-            Mafija je ubila: {roundState.lastResult.killedPlayerId ? playerNameById.get(roundState.lastResult.killedPlayerId) : 'nikog'}
+            Mafia eliminated: {roundState.lastResult.killedPlayerId ? playerNameById.get(roundState.lastResult.killedPlayerId) : 'nobody'}
           </div>
           <div className="text-xs text-[color:var(--ink-muted)]">
-            Inspektor je proverio: {roundState.lastResult.inspectorTargetId ? playerNameById.get(roundState.lastResult.inspectorTargetId) : 'nikog'}
+            Detective investigated: {roundState.lastResult.inspectorTargetId ? playerNameById.get(roundState.lastResult.inspectorTargetId) : 'nobody'}
             {roundState.lastResult.inspectorTargetId &&
-              ` - ${roundState.lastResult.inspectorIsMafia ? 'mafijas' : 'nije mafijas'}`}
+              ` - ${roundState.lastResult.inspectorIsMafia ? 'Mafia' : 'not Mafia'}`}
           </div>
           <div className="text-xs text-[color:var(--ink-muted)]">
-            Lekar je lecio: {roundState.lastResult.doctorTargetId ? playerNameById.get(roundState.lastResult.doctorTargetId) : 'nikog'}
-            {roundState.lastResult.doctorSaved ? ' (uspesno spasavanje)' : ''}
+            Doctor protected: {roundState.lastResult.doctorTargetId ? playerNameById.get(roundState.lastResult.doctorTargetId) : 'nobody'}
+            {roundState.lastResult.doctorSaved ? ' (successful save)' : ''}
           </div>
           <div className="text-xs text-[color:var(--ink-muted)]">
-            Dama je ucutkala: {roundState.lastResult.ladyTargetId ? playerNameById.get(roundState.lastResult.ladyTargetId) : 'nikog'}
+            Silencer blocked: {roundState.lastResult.ladyTargetId ? playerNameById.get(roundState.lastResult.ladyTargetId) : 'nobody'}
           </div>
         </div>
       )}
 
       {!isCasualMode && room?.status === 'finished' && roundState?.events?.length ? (
         <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2 text-left">
-          <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Dogadjaji rundi</p>
+          <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Round history</p>
           <div className="max-h-52 overflow-y-auto space-y-1.5 pr-1">
             {[...roundState.events].slice(-14).reverse().map((event) => (
               <div
@@ -1258,7 +1258,7 @@ const App: React.FC = () => {
                 className="rounded-lg border border-[color:var(--line)] bg-[var(--surface-strong)] px-2.5 py-2 text-xs text-[color:var(--ink-muted)]"
               >
                 <span className="text-[10px] uppercase tracking-[0.14em] text-[color:var(--ink-soft)]">
-                  Runda {event.round}
+                  Round {event.round}
                 </span>
                 <div className="mt-1">{event.message}</div>
               </div>
@@ -1268,7 +1268,7 @@ const App: React.FC = () => {
       ) : null}
 
       <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-3">
-        <p className="text-[10px] uppercase tracking-[0.22em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Uloge igraca</p>
+        <p className="text-[10px] uppercase tracking-[0.22em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Player roles</p>
         {players
           .filter((player) => !player.isNarrator)
           .map((player) => (
@@ -1291,13 +1291,13 @@ const App: React.FC = () => {
               className="flex min-w-0 flex-col items-start gap-2 rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
             >
               <span className={`w-full min-w-0 break-words text-left text-sm font-bold ${nameTone}`}>
-                {player.name} {eliminatedPlayerIds.has(player.id) ? '(eliminisan)' : ''}
+                {player.name} {eliminatedPlayerIds.has(player.id) ? '(eliminated)' : ''}
               </span>
               <span className="flex w-full items-center gap-2 text-[10px] uppercase tracking-[0.2em] sm:w-auto sm:tracking-[0.3em]">
                 <span className="text-base leading-none text-[color:var(--ink)]">
                   {getRoleIcon(player.role || Role.VILLAGER)}
                 </span>
-                <span className="break-words">{player.role || 'Uloga'}</span>
+                <span className="break-words">{player.role || 'Role'}</span>
               </span>
             </div>
               );
@@ -1305,7 +1305,7 @@ const App: React.FC = () => {
           ))}
       </div>
       <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2">
-        <p className="text-[10px] uppercase tracking-[0.22em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Potvrde uloga</p>
+        <p className="text-[10px] uppercase tracking-[0.22em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Role confirmations</p>
         {players
           .filter((player) => !player.isNarrator)
           .map((player) => (
@@ -1330,14 +1330,14 @@ const App: React.FC = () => {
           disabled={isBusy}
           className="w-full rounded-2xl bg-[var(--ink)] py-3 text-[11px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
         >
-          Nova podela uloga
+          Assign new roles
         </button>
       )}
       <button
         onClick={handleLeaveRoom}
         className="w-full rounded-2xl border border-red-500/40 bg-red-600 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-white hover:bg-red-500 transition"
       >
-        Napusti sobu
+        Leave room
       </button>
     </div>
   );
@@ -1386,12 +1386,12 @@ const App: React.FC = () => {
           <div className="w-full max-w-md rounded-[28px] border border-[color:var(--line)] bg-[var(--surface)] px-6 py-8 sm:px-8 sm:py-10 relative">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                <p className="text-[11px] uppercase tracking-[0.24em] sm:tracking-[0.4em] text-[color:var(--ink-faint)]">Priprema</p>
+                <p className="text-[11px] uppercase tracking-[0.24em] sm:tracking-[0.4em] text-[color:var(--ink-faint)]">Preparing your room</p>
                   <div className="flex items-center gap-2">
-                    <img src="/favicon.png" alt="Mafija" className="h-7 w-7 rounded-md" />
-                    <h1 className="title-font text-3xl text-[color:var(--ink)]">MAFIJA</h1>
+                    <img src="/favicon.png" alt="Mafia Night Game" className="h-7 w-7 rounded-md" />
+                    <h1 className="title-font text-3xl text-[color:var(--ink)]">MAFIA</h1>
                   </div>
-                  <p className="mt-2 text-xs text-[color:var(--ink-muted)]">Podesavamo sobu i konekciju.</p>
+                  <p className="mt-2 text-xs text-[color:var(--ink-muted)]">Connecting you to the game.</p>
                 </div>
                 {themeToggleInline}
               </div>
@@ -1401,7 +1401,7 @@ const App: React.FC = () => {
                 <div className="h-2.5 w-2.5 rounded-full bg-red-500 animate-bounce [animation-delay:0.2s]"></div>
                 <div className="h-2.5 w-2.5 rounded-full bg-red-500 animate-bounce [animation-delay:0.4s]"></div>
               </div>
-              <p className="mt-3 text-center text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Ucitavanje...</p>
+              <p className="mt-3 text-center text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Loading...</p>
             </div>
           </div>
         </div>
@@ -1421,13 +1421,13 @@ const App: React.FC = () => {
                 <div className="p-5 sm:p-8 md:p-10">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <h2 className="title-font text-3xl sm:text-4xl text-[color:var(--ink)]">Groblje</h2>
+                      <h2 className="title-font text-3xl sm:text-4xl text-[color:var(--ink)]">Graveyard</h2>
                       <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                        Chat soba za eliminisane igrace.
+                        Private chat for eliminated players.
                       </p>
                       {gameResult && (
                         <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                          Igra je zavrsena: {gameResult.winner === 'city' ? 'Grad je pobedio.' : 'Mafija je pobedila.'}
+                          Game over: {gameResult.winner === 'city' ? 'The town wins.' : 'The Mafia wins.'}
                         </p>
                       )}
                     </div>
@@ -1465,14 +1465,14 @@ const App: React.FC = () => {
                           );
                         })
                       ) : (
-                        <p className="text-xs text-[color:var(--ink-soft)]">Nema poruka.</p>
+                        <p className="text-xs text-[color:var(--ink-soft)]">No messages yet.</p>
                       )}
                     </div>
                     <div className="grid gap-2 sm:grid-cols-[1fr,auto] sm:items-end">
                       <textarea
                         value={graveyardDraftMessage}
                         onChange={(event) => setGraveyardDraftMessage(event.target.value)}
-                        placeholder="Poruka za groblje..."
+                        placeholder="Message the graveyard..."
                         className="min-h-[86px] w-full resize-y rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-sm text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
                       />
                       <button
@@ -1480,7 +1480,7 @@ const App: React.FC = () => {
                         disabled={isBusy || !graveyardDraftMessage.trim()}
                         className="w-full rounded-xl bg-[var(--ink)] px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60 sm:w-auto sm:min-h-[86px]"
                       >
-                        Posalji
+                        Send
                       </button>
                     </div>
                   </div>
@@ -1490,7 +1490,7 @@ const App: React.FC = () => {
                       onClick={handleLeaveRoom}
                       className="rounded-2xl border border-red-500/40 bg-red-600 px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-white hover:bg-red-500 transition"
                     >
-                      Napusti sobu
+                      Leave room
                     </button>
                   </div>
                 </div>
@@ -1517,19 +1517,19 @@ const App: React.FC = () => {
                 <aside className="flex flex-col gap-4 sm:gap-6 bg-[var(--surface-soft)] p-5 sm:p-6 md:p-8 border-b md:border-b-0 md:border-r border-[color:var(--line)]">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-[11px] uppercase tracking-[0.24em] sm:tracking-[0.4em] text-[color:var(--ink-faint)]">Nocna igra</p>
+                      <p className="text-[11px] uppercase tracking-[0.24em] sm:tracking-[0.4em] text-[color:var(--ink-faint)]">Social deduction game</p>
                       <div className="flex items-center gap-3">
-                        <img src="/favicon.png" alt="Mafija" className="h-8 w-8 md:h-9 md:w-9 rounded-md" />
-                        <h1 className="title-font text-3xl sm:text-4xl md:text-5xl text-[color:var(--ink)]">MAFIJA</h1>
+                        <img src="/favicon.png" alt="Mafia Night Game" className="h-8 w-8 md:h-9 md:w-9 rounded-md" />
+                        <h1 className="title-font text-3xl sm:text-4xl md:text-5xl text-[color:var(--ink)]">MAFIA</h1>
                       </div>
-                      <p className="mt-2 text-sm text-[color:var(--ink-muted)]">Diskretan diler uloga za igru uzivo.</p>
+                      <p className="mt-2 text-sm text-[color:var(--ink-muted)]">Private roles, live rounds, and voting.</p>
                     </div>
                     {themeToggleInline}
                   </div>
 
                   {roomCode.length === 6 && (
                     <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-4">
-                      <p className="text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Sifra sobe</p>
+                      <p className="text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Room code</p>
                       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                         <span className="font-mono text-base font-semibold tracking-[0.2em] text-[color:var(--ink)] sm:text-xl sm:tracking-[0.35em]">{roomCode.toUpperCase()}</span>
                         <button
@@ -1537,7 +1537,7 @@ const App: React.FC = () => {
                           onClick={handleCopyCode}
                           className="w-full rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] transition sm:w-auto sm:tracking-[0.3em]"
                         >
-                          {copyStatus === 'copied' ? 'Kopirano' : copyStatus === 'error' ? 'Greska' : 'Kopiraj'}
+                          {copyStatus === 'copied' ? 'Copied' : copyStatus === 'error' ? 'Copy failed' : 'Copy'}
                         </button>
                       </div>
                     </div>
@@ -1549,7 +1549,7 @@ const App: React.FC = () => {
                       onClick={() => setRoomCode(generateRoomCode())}
                       className="w-full rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-[9px] uppercase tracking-[0.2em] sm:tracking-[0.3em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] transition"
                     >
-                      Novi kod
+                      New code
                     </button>
                   )}
 
@@ -1557,10 +1557,10 @@ const App: React.FC = () => {
                     <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 text-xs text-[color:var(--ink-muted)]">
                       <div className="flex items-center gap-2 text-[color:var(--ink-muted)]">
                         <span className="h-2 w-2 rounded-full bg-red-500"></span>
-                        <span>Privatno deljenje uloga</span>
+                        <span>Private role sharing</span>
                       </div>
                       <p className="mt-2 leading-relaxed">
-                        Telefoni samo za uloge. Glasanje i eliminacije idu uzivo.
+                        Use phones for private roles, or run the complete game in the app.
                       </p>
                     </div>
                   )}
@@ -1575,7 +1575,7 @@ const App: React.FC = () => {
 
                   {room?.status !== 'waiting' && narrator && (
                     <div className="mb-5 rounded-2xl border border-[color:var(--line)] bg-[var(--surface-soft)] px-4 py-3 text-xs text-[color:var(--ink-muted)]">
-                      <span className="text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Narator</span>
+                      <span className="text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Narrator</span>
                       <div className="mt-2 text-sm font-semibold text-[color:var(--ink)]">{narrator.name}</div>
                     </div>
                   )}
@@ -1590,7 +1590,7 @@ const App: React.FC = () => {
                             entryMode === 'create' ? 'bg-[var(--surface-strong)] text-[color:var(--ink)]' : 'text-[color:var(--ink-faint)]'
                           }`}
                         >
-                          Kreiraj
+                          Create room
                         </button>
                         <button
                           type="button"
@@ -1599,15 +1599,15 @@ const App: React.FC = () => {
                             entryMode === 'join' ? 'bg-[var(--surface-strong)] text-[color:var(--ink)]' : 'text-[color:var(--ink-faint)]'
                           }`}
                         >
-                          Pridruzi se
+                          Join room
                         </button>
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-[11px] uppercase tracking-[0.3em] text-[color:var(--ink-faint)]">Ime igraca</label>
+                        <label className="text-[11px] uppercase tracking-[0.3em] text-[color:var(--ink-faint)]">Player name</label>
                         <input
                           className="w-full rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-4 py-3 text-sm text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
-                          placeholder="Tvoje ime"
+                          placeholder="Your name"
                           value={playerName}
                           onChange={(event) => setPlayerName(event.target.value)}
                         />
@@ -1615,10 +1615,10 @@ const App: React.FC = () => {
 
                       {entryMode === 'join' ? (
                         <div className="space-y-2">
-                          <label className="text-[11px] uppercase tracking-[0.3em] text-[color:var(--ink-faint)]">Sifra sobe</label>
+                          <label className="text-[11px] uppercase tracking-[0.3em] text-[color:var(--ink-faint)]">Room code</label>
                           <input
                             className="w-full rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-4 py-3 text-sm uppercase font-mono tracking-[0.22em] sm:tracking-[0.35em] text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
-                            placeholder="6 cifara"
+                            placeholder="6 digits"
                             value={roomCode}
                             onChange={(event) => setRoomCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
                             inputMode="numeric"
@@ -1627,7 +1627,7 @@ const App: React.FC = () => {
                       ) : (
                         <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface-soft)] p-3 space-y-3">
                           <div className="flex items-center justify-between gap-2 text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.3em] text-[color:var(--ink-faint)]">
-                            <span>Postavke sobe</span>
+                            <span>Room settings</span>
                             <div className="flex items-center gap-2">
                               <span className="text-[color:var(--ink-soft)]">Host</span>
                               <button
@@ -1636,15 +1636,15 @@ const App: React.FC = () => {
                                 className="rounded-lg border border-[color:var(--line)] bg-[var(--surface-strong)] px-2 py-1 text-[9px] tracking-[0.16em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
                               >
                                 {showDraftCustomRoles
-                                  ? 'Sakrij uloge'
-                                  : `Uloge${draftSettings.customRoles.length ? ` (${draftSettings.customRoles.length})` : ''}`}
+                                  ? 'Hide roles'
+                                  : `Custom roles${draftSettings.customRoles.length ? ` (${draftSettings.customRoles.length})` : ''}`}
                               </button>
                             </div>
                           </div>
 
                           <div className="grid grid-cols-2 gap-2">
                             <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-2.5">
-                              <p className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--ink-faint)]">Mafijasi</p>
+                              <p className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--ink-faint)]">Mafia members</p>
                               <div className="mt-2 flex items-center justify-between">
                                 <button
                                   type="button"
@@ -1666,7 +1666,7 @@ const App: React.FC = () => {
 
                             <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-2.5">
                               <div className="flex items-center justify-between">
-                                <p className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--ink-faint)]">Dama</p>
+                                <p className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--ink-faint)]">Silencer</p>
                                 <button
                                   type="button"
                                   onClick={toggleDraftLady}
@@ -1685,14 +1685,14 @@ const App: React.FC = () => {
                                 </button>
                               </div>
                               <p className="mt-2 text-[9px] uppercase tracking-[0.16em] text-[color:var(--ink-faint)]">
-                                {draftSettings.lady ? 'U igri' : 'Iskljucena'}
+                                {draftSettings.lady ? 'Enabled' : 'Disabled'}
                               </p>
                             </div>
                           </div>
 
                           <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-2.5">
                             <div className="flex items-center justify-between">
-                              <p className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--ink-faint)]">Kezual mod</p>
+                              <p className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--ink-faint)]">Role-only mode</p>
                               <button
                                 type="button"
                                 onClick={toggleDraftCasualMode}
@@ -1711,17 +1711,17 @@ const App: React.FC = () => {
                               </button>
                             </div>
                             <p className="mt-2 text-[9px] uppercase tracking-[0.16em] text-[color:var(--ink-faint)]">
-                              {draftSettings.casualMode ? 'Samo dodela uloga' : 'Puna igra u aplikaciji'}
+                              {draftSettings.casualMode ? 'Assign roles only' : 'Complete in-app game'}
                             </p>
                           </div>
 
                           {showDraftCustomRoles && (
                             <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-2.5 space-y-2.5">
-                              <p className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--ink-faint)]">Dodatne uloge</p>
+                              <p className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--ink-faint)]">Custom roles</p>
                               <div className="grid grid-cols-[1fr,auto] gap-2">
                                 <input
                                   className="min-w-0 rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-2.5 py-2 text-xs text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
-                                  placeholder="Naziv uloge"
+                                  placeholder="Role name"
                                   value={draftCustomRoleName}
                                   onChange={(event) => setDraftCustomRoleName(event.target.value)}
                                 />
@@ -1730,7 +1730,7 @@ const App: React.FC = () => {
                                   onClick={handleAddDraftCustomRole}
                                   className="rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-2.5 py-2 text-[9px] uppercase tracking-[0.16em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
                                 >
-                                  Dodaj
+                                  Add
                                 </button>
                               </div>
                               <div className="flex items-center gap-1">
@@ -1797,7 +1797,7 @@ const App: React.FC = () => {
                         disabled={isBusy}
                         className="w-full rounded-2xl bg-red-600 text-white font-semibold py-4 uppercase tracking-[0.2em] sm:tracking-[0.3em] text-xs hover:bg-red-500 disabled:opacity-60 transition"
                       >
-                        {entryMode === 'create' ? 'Kreiraj sobu' : 'Udji u sobu'}
+                        {entryMode === 'create' ? 'Create room' : 'Join room'}
                       </button>
                     </div>
                   )}
@@ -1806,7 +1806,7 @@ const App: React.FC = () => {
                     <div className="space-y-4 sm:space-y-6">
                       <div className="flex items-center justify-between">
                         <h2 className="text-[11px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">
-                          Igraci ({players.length})
+                          Players ({players.length})
                         </h2>
                         {me?.isHost && (
                           <span className="rounded-full bg-[var(--ink)] text-[color:var(--paper)] text-[10px] px-3 py-1 uppercase tracking-[0.2em] sm:tracking-[0.3em]">
@@ -1822,7 +1822,7 @@ const App: React.FC = () => {
                             className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] px-4 py-3"
                           >
                             <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[color:var(--ink)]">
-                              {player.name} {player.clientId === clientId && '(Ti)'}
+                              {player.name} {player.clientId === clientId && '(You)'}
                             </span>
                             <i className="fas fa-check-circle text-emerald-600 text-xs"></i>
                           </div>
@@ -1832,7 +1832,7 @@ const App: React.FC = () => {
                       {me?.isHost ? (
                         <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface-soft)] p-4 space-y-3 sm:space-y-4">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm text-[color:var(--ink-muted)]">Broj Mafijasa</span>
+                            <span className="text-sm text-[color:var(--ink-muted)]">Mafia members</span>
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => handleMafiaCountChange(-1)}
@@ -1853,7 +1853,7 @@ const App: React.FC = () => {
                           </div>
                           <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface)] p-3 space-y-3">
                             <div className="flex items-center justify-between">
-                              <span className="text-sm text-[color:var(--ink-muted)]">Dama</span>
+                              <span className="text-sm text-[color:var(--ink-muted)]">Silencer</span>
                               <button
                                 type="button"
                                 onClick={handleLadyToggle}
@@ -1873,12 +1873,12 @@ const App: React.FC = () => {
                               </button>
                             </div>
                             <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--ink-faint)]">
-                              {settings.lady ? 'U igri' : 'Iskljucena'}
+                              {settings.lady ? 'Enabled' : 'Disabled'}
                             </p>
                           </div>
                           <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface)] p-3 space-y-3">
                             <div className="flex items-center justify-between">
-                              <span className="text-sm text-[color:var(--ink-muted)]">Kezual mod</span>
+                              <span className="text-sm text-[color:var(--ink-muted)]">Role-only mode</span>
                               <button
                                 type="button"
                                 onClick={handleCasualModeToggle}
@@ -1898,15 +1898,15 @@ const App: React.FC = () => {
                               </button>
                             </div>
                             <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--ink-faint)]">
-                              {settings.casualMode ? 'Samo dodela uloga' : 'Puna igra u aplikaciji'}
+                              {settings.casualMode ? 'Assign roles only' : 'Complete in-app game'}
                             </p>
                           </div>
                           <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface)] p-3 space-y-3">
-                            <p className="text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Dodatne uloge</p>
+                            <p className="text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Custom roles</p>
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                               <input
                                 className="flex-1 rounded-xl border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2 text-xs text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
-                                placeholder="Naziv uloge"
+                                placeholder="Role name"
                                 value={customRoleName}
                                 onChange={(event) => setCustomRoleName(event.target.value)}
                               />
@@ -1935,7 +1935,7 @@ const App: React.FC = () => {
                                 disabled={isBusy}
                                 className="w-full rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] disabled:opacity-60 sm:w-auto sm:tracking-[0.3em]"
                               >
-                                Dodaj
+                                Add
                               </button>
                             </div>
                             {settings.customRoles.length > 0 && (
@@ -1970,7 +1970,7 @@ const App: React.FC = () => {
                                         disabled={isBusy}
                                         className="rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-2 py-1 text-[9px] uppercase tracking-[0.2em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] disabled:opacity-60 sm:tracking-[0.3em]"
                                       >
-                                        Ukloni
+                                        Remove
                                       </button>
                                     </div>
                                   </div>
@@ -1983,23 +1983,23 @@ const App: React.FC = () => {
                             disabled={isBusy}
                             className="w-full rounded-2xl bg-[var(--ink)] py-3 text-[11px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
                           >
-                            Podeli uloge
+                            Assign roles
                           </button>
                           <button
                             onClick={handleLeaveRoom}
                             className="w-full rounded-2xl border border-red-500/40 bg-red-600 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-white hover:bg-red-500 transition"
                           >
-                            Napusti sobu
+                            Leave room
                           </button>
                         </div>
                       ) : (
                         <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 text-center space-y-3 sm:space-y-4">
-                          <p className="text-xs text-[color:var(--ink-muted)] italic">Cekamo da domacin podeli uloge...</p>
+                          <p className="text-xs text-[color:var(--ink-muted)] italic">Waiting for the host to assign roles...</p>
                           <button
                             onClick={handleLeaveRoom}
                             className="w-full rounded-2xl border border-red-500/40 bg-red-600 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-white hover:bg-red-500 transition"
                           >
-                            Napusti sobu
+                            Leave room
                           </button>
                         </div>
                       )}
@@ -2010,12 +2010,12 @@ const App: React.FC = () => {
                     narratorPanel
                   ) : (
                     <div className="text-center space-y-6 sm:space-y-8">
-                      <p className="text-sm text-[color:var(--ink-muted)] italic">Tvoja tajna uloga je...</p>
+                      <p className="text-sm text-[color:var(--ink-muted)] italic">Your secret role is...</p>
 
                       <div className="relative overflow-hidden rounded-[28px] border border-[color:var(--line)] bg-[var(--surface-strong)] px-6 py-10 sm:py-12 group no-select">
                         <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--surface-strong)] transition-opacity duration-300 group-active:opacity-0">
                           <span className="title-font text-base uppercase tracking-[0.24em] sm:tracking-[0.4em] text-[color:var(--ink-muted)] select-none">
-                            Drzi za prikaz
+                            Hold to reveal
                           </span>
                         </div>
 
@@ -2033,7 +2033,7 @@ const App: React.FC = () => {
                         disabled={isBusy}
                         className="w-full rounded-2xl bg-[var(--ink)] text-[color:var(--paper)] font-semibold py-4 uppercase tracking-[0.3em] text-xs disabled:opacity-60"
                       >
-                        Video sam ulogu
+                        I have seen my role
                       </button>
                     </div>
                   ))}
@@ -2047,7 +2047,7 @@ const App: React.FC = () => {
                         <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-bounce [animation-delay:0.2s]"></div>
                         <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-bounce [animation-delay:0.4s]"></div>
                       </div>
-                      <h2 className="title-font text-2xl text-[color:var(--ink)]">Cekamo ostale...</h2>
+                      <h2 className="title-font text-2xl text-[color:var(--ink)]">Waiting for everyone...</h2>
                       <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2">
                         {players.map((player) => (
                           <div
@@ -2069,7 +2069,7 @@ const App: React.FC = () => {
                         onClick={handleLeaveRoom}
                         className="w-full rounded-2xl border border-red-500/40 bg-red-600 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-white hover:bg-red-500 transition"
                       >
-                        Napusti sobu
+                        Leave room
                       </button>
                     </div>
                   ))}
@@ -2081,13 +2081,13 @@ const App: React.FC = () => {
                       {isMeEliminated ? (
                         <div className="space-y-4">
                           <div>
-                            <h2 className="title-font text-3xl text-[color:var(--ink)]">Groblje</h2>
+                            <h2 className="title-font text-3xl text-[color:var(--ink)]">Graveyard</h2>
                             <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                              Chat soba za eliminisane igrace.
+                              Private chat for eliminated players.
                             </p>
                             {gameResult && (
                               <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                                Igra je zavrsena: {gameResult.winner === 'city' ? 'Grad je pobedio.' : 'Mafija je pobedila.'}
+                                Game over: {gameResult.winner === 'city' ? 'The town wins.' : 'The Mafia wins.'}
                               </p>
                             )}
                           </div>
@@ -2122,14 +2122,14 @@ const App: React.FC = () => {
                                   );
                                 })
                               ) : (
-                                <p className="text-xs text-[color:var(--ink-soft)]">Nema poruka.</p>
+                                <p className="text-xs text-[color:var(--ink-soft)]">No messages yet.</p>
                               )}
                             </div>
                             <div className="grid gap-2 sm:grid-cols-[1fr,auto] sm:items-end">
                               <textarea
                                 value={graveyardDraftMessage}
                                 onChange={(event) => setGraveyardDraftMessage(event.target.value)}
-                                placeholder="Poruka za groblje..."
+                                placeholder="Message the graveyard..."
                                 className="min-h-[86px] w-full resize-y rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-sm text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
                               />
                               <button
@@ -2137,50 +2137,50 @@ const App: React.FC = () => {
                                 disabled={isBusy || !graveyardDraftMessage.trim()}
                                 className="w-full rounded-xl bg-[var(--ink)] px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60 sm:w-auto sm:min-h-[86px]"
                               >
-                                Posalji
+                                Send
                               </button>
                             </div>
                           </div>
                         </div>
                       ) : gameResult ? (
                         <div>
-                          <h2 className="title-font text-3xl text-[color:var(--ink)]">Igra je zavrsena</h2>
+                          <h2 className="title-font text-3xl text-[color:var(--ink)]">Game over</h2>
                           <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                            {gameResult.winner === 'city' ? 'Grad je pobedio.' : 'Mafija je pobedila.'}
+                            {gameResult.winner === 'city' ? 'The town wins.' : 'The Mafia wins.'}
                           </p>
                         </div>
                       ) : isCasualMode ? (
                         <div>
-                          <h2 className="title-font text-3xl text-[color:var(--ink)]">Kezual mod</h2>
+                          <h2 className="title-font text-3xl text-[color:var(--ink)]">Role-only mode</h2>
                           <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                            Uloge su podeljene. Dalji tok igre (akcije, glasanje i eliminacije) vodite uzivo van aplikacije.
+                            Roles are assigned. Continue night actions, discussion, and voting in person.
                           </p>
                         </div>
                       ) : roundState?.phase === 'night' && me?.role === Role.MAFIA ? (
                         <div>
-                          <h2 className="title-font text-3xl text-[color:var(--ink)]">Mafija noc</h2>
+                          <h2 className="title-font text-3xl text-[color:var(--ink)]">Mafia night</h2>
                           <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                            Otvoren je mafija chat modal za dogovor i izbor mete.
+                            Use the private Mafia chat to agree on a target.
                           </p>
                         </div>
                       ) : roundState?.phase === 'night' && myNightActionType && me?.role !== Role.MAFIA ? (
                         <div className="space-y-4">
                           <div>
-                            <h2 className="title-font text-3xl text-[color:var(--ink)]">Nocna akcija</h2>
+                            <h2 className="title-font text-3xl text-[color:var(--ink)]">Night action</h2>
                             <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                              Izaberi igraca za svoju akciju i potvrdi slanje.
+                              Choose a player and submit your action.
                             </p>
                           </div>
                           <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 text-left space-y-3">
                             <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]">
-                              Tvoja uloga: {me?.role}
+                              Your role: {me?.role}
                             </p>
                             <select
                               value={nightTargetId}
                               onChange={(event) => setNightTargetId(event.target.value)}
                               className="w-full rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-sm text-[color:var(--ink)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
                             >
-                              <option value="">Izaberi igraca</option>
+                              <option value="">Choose a player</option>
                               {availableNightTargets.map((player) => (
                                 <option key={player.id} value={player.id}>
                                   {player.name}
@@ -2192,40 +2192,40 @@ const App: React.FC = () => {
                               disabled={isBusy || !nightTargetId}
                               className="w-full rounded-xl bg-[var(--ink)] py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
                             >
-                              Posalji akciju
+                              Submit action
                             </button>
                             {mySubmittedAction && (
                               <p className="text-xs text-[color:var(--ink-muted)]">
-                                Poslednji izbor: {mySubmittedAction.targetName}
+                                Last selection: {mySubmittedAction.targetName}
                               </p>
                             )}
                           </div>
                         </div>
                       ) : roundState?.phase === 'night' ? (
                         <div>
-                          <h2 className="title-font text-3xl text-[color:var(--ink)]">Noc je u toku</h2>
+                          <h2 className="title-font text-3xl text-[color:var(--ink)]">Night is in progress</h2>
                           <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                            Tvoja uloga nema nocnu akciju. Cekamo ostale igrace i naratora.
+                            Your role has no night action. Waiting for the other players and the narrator.
                           </p>
                         </div>
                       ) : roundState?.phase === 'voting' ? (
                         <div className="space-y-4">
                           <div>
-                            <h2 className="title-font text-3xl text-[color:var(--ink)]">Glasanje je u toku</h2>
+                            <h2 className="title-font text-3xl text-[color:var(--ink)]">Voting is open</h2>
                             <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                              Izaberi igraca i potvrdi glas. Rezultat izlazi kada svi zivi glasaju.
+                              Choose a player and submit your vote. The result appears after every living player votes.
                             </p>
                           </div>
                           <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 text-left space-y-3">
                             <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]">
-                              Glasanje
+                              Vote
                             </p>
                             <select
                               value={voteTargetId}
                               onChange={(event) => setVoteTargetId(event.target.value)}
                               className="w-full rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-sm text-[color:var(--ink)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
                             >
-                              <option value="">Izaberi igraca</option>
+                              <option value="">Choose a player</option>
                               {alivePlayers.map((player) => (
                                 <option key={player.id} value={player.id}>
                                   {player.name}
@@ -2237,26 +2237,26 @@ const App: React.FC = () => {
                               disabled={isBusy || !voteTargetId}
                               className="w-full rounded-xl bg-[var(--ink)] py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
                             >
-                              Potvrdi glas
+                              Submit vote
                             </button>
                             {mySubmittedVote && (
                               <p className="text-xs text-[color:var(--ink-muted)]">
-                                Tvoj poslednji glas: {mySubmittedVote.targetName}
+                                Your current vote: {mySubmittedVote.targetName}
                               </p>
                             )}
                             <div className="text-xs text-[color:var(--ink-muted)]">
-                              Glasalo: {votedPlayers.length}/{alivePlayers.length}
+                              Votes submitted: {votedPlayers.length}/{alivePlayers.length}
                             </div>
                             <div className="text-xs text-[color:var(--ink-muted)]">
-                              Cekamo: {pendingVoters.length ? pendingVoters.map((player) => player.name).join(', ') : 'svi su glasali'}
+                              Waiting for: {pendingVoters.length ? pendingVoters.map((player) => player.name).join(', ') : 'all votes are in'}
                             </div>
                           </div>
                         </div>
                       ) : (
                         <div>
-                          <h2 className="title-font text-3xl text-[color:var(--ink)]">Spremni!</h2>
+                          <h2 className="title-font text-3xl text-[color:var(--ink)]">Ready for the next round</h2>
                           <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                            Cekamo da narator pokrene sledecu nocnu rundu.
+                            Waiting for the narrator to start the next night.
                           </p>
                         </div>
                       )}
@@ -2269,14 +2269,14 @@ const App: React.FC = () => {
                             disabled={isBusy}
                             className="w-full rounded-2xl bg-[var(--ink)] py-3 text-[11px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
                           >
-                            Nova podela uloga
+                            Assign new roles
                           </button>
                         )}
                         <button
                           onClick={handleLeaveRoom}
                           className="w-full rounded-2xl border border-red-500/40 bg-red-600 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-white hover:bg-red-500 transition"
                         >
-                          Napusti sobu
+                          Leave room
                         </button>
                       </div>
                     </div>
@@ -2292,7 +2292,7 @@ const App: React.FC = () => {
 
           <footer className="mt-5 sm:mt-8 flex items-center justify-center gap-2 text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.4em] text-[color:var(--ink-soft)]">
             <i className="fas fa-fingerprint"></i>
-            <span>Mafia Card Dealer</span>
+            <span>Free, open-source Mafia party game</span>
           </footer>
         </div>
       </div>
@@ -2301,4 +2301,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-

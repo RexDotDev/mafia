@@ -1,11 +1,25 @@
 export enum Role {
-  MAFIA = 'Mafija',
-  VILLAGER = 'Građanin',
-  DOCTOR = 'Doktor',
-  DETECTIVE = 'Inspektor',
-  LADY = 'Dama',
-  NARRATOR = 'Narator'
+  MAFIA = 'Mafia',
+  VILLAGER = 'Villager',
+  DOCTOR = 'Doctor',
+  DETECTIVE = 'Detective',
+  LADY = 'Silencer',
+  NARRATOR = 'Narrator'
 }
+
+const LEGACY_ROLE_NAMES: Record<string, Role> = {
+  Mafija: Role.MAFIA,
+  Građanin: Role.VILLAGER,
+  Doktor: Role.DOCTOR,
+  Inspektor: Role.DETECTIVE,
+  Dama: Role.LADY,
+  Narator: Role.NARRATOR,
+};
+
+export const normalizeRoleName = (role?: string | null): string | undefined => {
+  if (!role) return undefined;
+  return LEGACY_ROLE_NAMES[role] ?? role;
+};
 
 export enum GamePhase {
   JOIN = 'JOIN',
