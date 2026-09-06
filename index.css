@@ -4,48 +4,46 @@
 
 :root {
   color-scheme: light;
-  --paper: #f4f1ea;
-  --paper-strong: #efe9e0;
-  --surface: rgba(255, 255, 255, 0.85);
-  --surface-strong: #ffffff;
-  --surface-soft: #f9f6f1;
-  --surface-muted: rgba(15, 15, 15, 0.04);
-  --ink: #151515;
-  --ink-muted: rgba(15, 15, 15, 0.68);
-  --ink-faint: rgba(15, 15, 15, 0.48);
-  --ink-soft: rgba(15, 15, 15, 0.32);
-  --line: rgba(15, 15, 15, 0.1);
-  --line-strong: rgba(15, 15, 15, 0.16);
-  --accent: #b91c1c;
-  --accent-warm: #f59e0b;
-  --accent-green: #10b981;
-  --glow-1: rgba(185, 28, 28, 0.18);
-  --glow-2: rgba(245, 158, 11, 0.18);
-  --glow-3: rgba(15, 23, 42, 0.08);
-  --grid-line: rgba(20, 20, 20, 0.06);
+  --paper: #f7f6f2;
+  --paper-strong: #f0eee8;
+  --surface: #ffffff;
+  --surface-strong: #faf9f6;
+  --surface-soft: #f3f1eb;
+  --surface-muted: rgba(20, 22, 26, 0.04);
+  --ink: #14161a;
+  --ink-muted: #525866;
+  --ink-faint: #7e8695;
+  --ink-soft: #a0a7b5;
+  --line: rgba(20, 22, 26, 0.08);
+  --line-strong: rgba(20, 22, 26, 0.16);
+  --accent: #c92a2a;
+  --accent-hover: #b02525;
+  --accent-soft: rgba(201, 42, 42, 0.08);
+  --accent-warm: #d97706;
+  --accent-green: #059669;
+  --grid-line: rgba(20, 22, 26, 0.03);
 }
 
 [data-theme="dark"] {
   color-scheme: dark;
-  --paper: #07090c;
-  --paper-strong: #0b0f15;
-  --surface: rgba(16, 19, 25, 0.92);
-  --surface-strong: #10151d;
-  --surface-soft: #151b26;
-  --surface-muted: rgba(255, 255, 255, 0.06);
-  --ink: #f8f8f8;
-  --ink-muted: rgba(248, 248, 248, 0.78);
-  --ink-faint: rgba(248, 248, 248, 0.6);
-  --ink-soft: rgba(248, 248, 248, 0.42);
-  --line: rgba(248, 248, 248, 0.18);
-  --line-strong: rgba(248, 248, 248, 0.24);
-  --accent: #ef4444;
+  --paper: #0b0d12;
+  --paper-strong: #0f1219;
+  --surface: #131620;
+  --surface-strong: #181c28;
+  --surface-soft: #10131c;
+  --surface-muted: rgba(255, 255, 255, 0.04);
+  --ink: #f4f5f7;
+  --ink-muted: #9ca3af;
+  --ink-faint: #6b7280;
+  --ink-soft: #4b5563;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.16);
+  --accent: #e03131;
+  --accent-hover: #fa5252;
+  --accent-soft: rgba(224, 49, 49, 0.12);
   --accent-warm: #f59e0b;
-  --accent-green: #22c55e;
-  --glow-1: rgba(239, 68, 68, 0.18);
-  --glow-2: rgba(245, 158, 11, 0.16);
-  --glow-3: rgba(148, 163, 184, 0.1);
-  --grid-line: rgba(255, 255, 255, 0.08);
+  --accent-green: #10b981;
+  --grid-line: rgba(255, 255, 255, 0.02);
 }
 
 *,
@@ -57,35 +55,38 @@
 html,
 body {
   margin: 0;
-  min-height: 100vh;
-  background: var(--paper);
+  min-height: 100dvh;
+  background-color: var(--paper);
   color: var(--ink);
-  font-family: "Sora", system-ui, -apple-system, Segoe UI, sans-serif;
+  font-family: "Plus Jakarta Sans", "Sora", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   transition: background-color 0.25s ease, color 0.25s ease;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 #root {
-  min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: hidden;
 }
 
 .app-bg {
   position: relative;
-  min-height: 100vh;
-  background: var(--paper);
+  min-height: 100dvh;
+  background-color: var(--paper);
   isolation: isolate;
   overflow-x: hidden;
 }
 
+/* Subtle atmospheric lighting without cheesy AI neon blur blobs */
 .app-bg::before {
   content: "";
   position: absolute;
-  inset: -20%;
-  background:
-    radial-gradient(600px 420px at 15% 8%, var(--glow-1), transparent 60%),
-    radial-gradient(520px 380px at 85% 12%, var(--glow-2), transparent 65%),
-    radial-gradient(700px 500px at 50% 85%, var(--glow-3), transparent 70%);
+  inset: 0;
+  background-image:
+    radial-gradient(ellipse 900px 500px at 50% -10%, rgba(224, 49, 49, 0.04), transparent 70%),
+    radial-gradient(ellipse 700px 400px at 85% 100%, rgba(16, 185, 129, 0.02), transparent 70%);
+  pointer-events: none;
   z-index: 0;
 }
 
@@ -96,10 +97,10 @@ body {
   background-image:
     linear-gradient(var(--grid-line) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-  background-size: 120px 120px;
-  opacity: 0.35;
+  background-size: 80px 80px;
+  opacity: 0.6;
+  pointer-events: none;
   z-index: 0;
-  mask-image: radial-gradient(circle at 50% 20%, rgba(0, 0, 0, 0.9), transparent 70%);
 }
 
 .app-shell {
@@ -108,8 +109,9 @@ body {
 }
 
 .title-font {
-  font-family: "Bebas Neue", "Sora", sans-serif;
-  letter-spacing: 0.02em;
+  font-family: "Space Grotesk", "Plus Jakarta Sans", sans-serif;
+  letter-spacing: -0.025em;
+  font-weight: 700;
 }
 
 .no-select {
@@ -117,4 +119,28 @@ body {
   -webkit-user-select: none;
   -ms-user-select: none;
   user-select: none;
+}
+
+/* Tactile button interaction */
+.btn-tactile {
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-tactile:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+/* Custom sleek scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-faint);
 }

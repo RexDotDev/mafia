@@ -972,26 +972,25 @@ const App: React.FC = () => {
     return (
       <div className="app-bg">
         {themeToggleFloating}
-        <div className="app-shell flex min-h-screen items-center justify-center px-4 py-6 sm:px-5 sm:py-12">
-          <div className="w-full max-w-md rounded-[28px] border border-[color:var(--line)] bg-[var(--surface)] px-6 py-8 sm:px-8 sm:py-10 relative">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.24em] sm:tracking-[0.4em] text-[color:var(--ink-faint)]">Preparing your room</p>
-                <div className="flex items-center gap-2">
-                  <img src="/favicon.png" alt="Mafia Night Game" className="h-7 w-7 rounded-md" />
-                  <h1 className="title-font text-3xl text-[color:var(--ink)]">MAFIA</h1>
-                </div>
-                <p className="mt-2 text-xs text-[color:var(--ink-muted)]">Connecting you to the game.</p>
+        <div className="app-shell flex min-h-[100dvh] items-center justify-center px-4 py-6 sm:px-5 sm:py-12">
+          <div className="w-full max-w-sm rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-8 shadow-elevated dark:shadow-elevated-dark relative text-center space-y-4">
+            <div className="flex justify-center">
+              <div className="relative flex items-center justify-center">
+                <span className="absolute h-14 w-14 rounded-full bg-red-500/10 animate-ping"></span>
+                <img
+                  src="/favicon.png"
+                  alt="Mafia"
+                  className="h-10 w-10 rounded-xl border border-[color:var(--line)] relative z-10 shadow-xs"
+                />
               </div>
-              {themeToggleInline}
             </div>
-            <div className="mt-6 sm:mt-8 rounded-2xl border border-[color:var(--line)] bg-[var(--surface-soft)] p-4">
-              <div className="flex justify-center space-x-2">
-                <div className="h-2.5 w-2.5 rounded-full bg-red-500 animate-bounce"></div>
-                <div className="h-2.5 w-2.5 rounded-full bg-red-500 animate-bounce [animation-delay:0.2s]"></div>
-                <div className="h-2.5 w-2.5 rounded-full bg-red-500 animate-bounce [animation-delay:0.4s]"></div>
-              </div>
-              <p className="mt-3 text-center text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Loading...</p>
+            <div>
+              <h1 className="font-display text-lg font-bold tracking-tight text-[color:var(--ink)]">
+                Syncing Session
+              </h1>
+              <p className="mt-1 text-xs text-[color:var(--ink-muted)]">
+                Connecting to Mafia game frequency...
+              </p>
             </div>
           </div>
         </div>
@@ -1031,224 +1030,241 @@ const App: React.FC = () => {
   return (
     <div className="app-bg">
       {themeToggleFloating}
-      <div className="app-shell flex min-h-screen flex-col items-center justify-center px-4 py-6 sm:px-5 sm:py-12">
+      <div className="app-shell flex min-h-[100dvh] flex-col items-center justify-center px-4 py-6 sm:px-6 sm:py-12">
         <div className="w-full max-w-5xl">
-          <div className="relative">
-            <div className="absolute -inset-1 rounded-[36px] bg-gradient-to-br from-red-500/50 via-red-400/25 to-transparent blur-2xl"></div>
-            <div className="relative overflow-hidden rounded-[32px] border border-[color:var(--line)] bg-[var(--surface)]">
-              <div className="grid md:grid-cols-[280px,1fr]">
-                <Header
-                  roomCode={roomCode}
-                  phase={phase}
-                  entryMode={entryMode}
-                  copyStatus={copyStatus}
-                  theme={theme}
-                  onToggleTheme={toggleTheme}
-                  onCopyCode={handleCopyCode}
-                  onNewCode={() => setRoomCode(generateRoomCode())}
-                />
+          <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-[color:var(--line)] bg-[var(--surface)] shadow-elevated dark:shadow-elevated-dark">
+            <div className="grid md:grid-cols-[300px,1fr]">
+              <Header
+                roomCode={roomCode}
+                phase={phase}
+                entryMode={entryMode}
+                copyStatus={copyStatus}
+                theme={theme}
+                onToggleTheme={toggleTheme}
+                onCopyCode={handleCopyCode}
+                onNewCode={() => setRoomCode(generateRoomCode())}
+              />
 
-                <main className="p-5 sm:p-6 md:p-10 bg-[var(--surface)]">
-                  {errorMessage && (
-                    <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
-                      {errorMessage}
-                    </div>
-                  )}
+              <main className="p-6 sm:p-8 md:p-10 bg-[var(--surface)]">
+                {errorMessage && (
+                  <div className="mb-5 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-xs text-red-600 dark:text-red-400 flex items-center gap-2">
+                    <i className="fas fa-circle-exclamation text-xs shrink-0"></i>
+                    <span>{errorMessage}</span>
+                  </div>
+                )}
 
-                  {room?.status !== 'waiting' && narrator && (
-                    <div className="mb-5 rounded-2xl border border-[color:var(--line)] bg-[var(--surface-soft)] px-4 py-3 text-xs text-[color:var(--ink-muted)]">
-                      <span className="text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Narrator</span>
-                      <div className="mt-2 text-sm font-semibold text-[color:var(--ink)]">{narrator.name}</div>
-                    </div>
-                  )}
+                {room?.status !== 'waiting' && narrator && (
+                  <div className="mb-5 rounded-xl border border-[color:var(--line)] bg-[var(--surface-soft)] px-4 py-2.5 text-xs text-[color:var(--ink-muted)] flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[color:var(--ink-faint)] flex items-center gap-1.5">
+                      <i className="fas fa-crown text-[10px] text-amber-500"></i>
+                      Narrator:
+                    </span>
+                    <span className="font-semibold text-[color:var(--ink)]">{narrator.name}</span>
+                  </div>
+                )}
 
-                  {phase === GamePhase.JOIN && (
-                    <EntryScreen
-                      entryMode={entryMode}
-                      playerName={playerName}
-                      roomCode={roomCode}
+                {phase === GamePhase.JOIN && (
+                  <EntryScreen
+                    entryMode={entryMode}
+                    playerName={playerName}
+                    roomCode={roomCode}
+                    isBusy={isBusy}
+                    draftSettings={draftSettings}
+                    draftCustomRoleName={draftCustomRoleName}
+                    draftCustomRoleCount={draftCustomRoleCount}
+                    showDraftCustomRoles={showDraftCustomRoles}
+                    onModeChange={handleModeChange}
+                    onPlayerNameChange={setPlayerName}
+                    onRoomCodeChange={setRoomCode}
+                    onDraftMafiaChange={handleDraftMafiaChange}
+                    onToggleDraftLady={toggleDraftLady}
+                    onToggleDraftCasualMode={toggleDraftCasualMode}
+                    onToggleShowDraftCustomRoles={() => setShowDraftCustomRoles((prev) => !prev)}
+                    onDraftCustomRoleNameChange={setDraftCustomRoleName}
+                    onDraftCustomRoleCountChange={setDraftCustomRoleCount}
+                    onAddDraftCustomRole={handleAddDraftCustomRole}
+                    onUpdateDraftCustomRoleCount={handleDraftCustomRoleCountChange}
+                    onRemoveDraftCustomRole={handleRemoveDraftCustomRole}
+                    onSubmit={handleJoin}
+                  />
+                )}
+
+                {phase === GamePhase.LOBBY && (
+                  <LobbyScreen
+                    players={players}
+                    clientId={clientId}
+                    isHost={!!me?.isHost}
+                    settings={settings}
+                    customRoleName={customRoleName}
+                    customRoleCount={customRoleCount}
+                    isBusy={isBusy}
+                    onCustomRoleNameChange={setCustomRoleName}
+                    onCustomRoleCountChange={setCustomRoleCount}
+                    onMafiaCountChange={handleMafiaCountChange}
+                    onLadyToggle={handleLadyToggle}
+                    onCasualModeToggle={handleCasualModeToggle}
+                    onAddCustomRole={handleAddCustomRole}
+                    onCustomRoleUpdate={handleCustomRoleCountChange}
+                    onRemoveCustomRole={handleRemoveCustomRole}
+                    onStartGame={handleStart}
+                    onLeaveRoom={handleLeaveRoom}
+                  />
+                )}
+
+                {(phase === GamePhase.REVEAL || phase === GamePhase.WAITING_FOR_OTHERS) && (
+                  me?.isNarrator ? (
+                    <NarratorScreen
+                      roomStatus={room?.status}
+                      roundState={roundState ?? null}
+                      isCasualMode={isCasualMode}
+                      alivePlayers={alivePlayers}
+                      gameResult={gameResult}
                       isBusy={isBusy}
-                      draftSettings={draftSettings}
-                      draftCustomRoleName={draftCustomRoleName}
-                      draftCustomRoleCount={draftCustomRoleCount}
-                      showDraftCustomRoles={showDraftCustomRoles}
-                      onModeChange={handleModeChange}
-                      onPlayerNameChange={setPlayerName}
-                      onRoomCodeChange={setRoomCode}
-                      onDraftMafiaChange={handleDraftMafiaChange}
-                      onToggleDraftLady={toggleDraftLady}
-                      onToggleDraftCasualMode={toggleDraftCasualMode}
-                      onToggleShowDraftCustomRoles={() => setShowDraftCustomRoles((prev) => !prev)}
-                      onDraftCustomRoleNameChange={setDraftCustomRoleName}
-                      onDraftCustomRoleCountChange={setDraftCustomRoleCount}
-                      onAddDraftCustomRole={handleAddDraftCustomRole}
-                      onUpdateDraftCustomRoleCount={handleDraftCustomRoleCountChange}
-                      onRemoveDraftCustomRole={handleRemoveDraftCustomRole}
-                      onSubmit={handleJoin}
-                    />
-                  )}
-
-                  {phase === GamePhase.LOBBY && (
-                    <LobbyScreen
+                      votedPlayers={votedPlayers}
+                      pendingVoters={pendingVoters}
+                      roundActionSummary={roundActionSummary}
+                      roundInspectorPreview={roundInspectorPreview}
+                      playerNameById={playerNameById}
                       players={players}
-                      clientId={clientId}
-                      isHost={!!me?.isHost}
-                      settings={settings}
-                      customRoleName={customRoleName}
-                      customRoleCount={customRoleCount}
-                      isBusy={isBusy}
-                      onCustomRoleNameChange={setCustomRoleName}
-                      onCustomRoleCountChange={setCustomRoleCount}
-                      onMafiaCountChange={handleMafiaCountChange}
-                      onLadyToggle={handleLadyToggle}
-                      onCasualModeToggle={handleCasualModeToggle}
-                      onAddCustomRole={handleAddCustomRole}
-                      onCustomRoleUpdate={handleCustomRoleCountChange}
-                      onRemoveCustomRole={handleRemoveCustomRole}
-                      onStartGame={handleStart}
+                      eliminatedPlayerIds={eliminatedPlayerIds}
+                      me={me ?? null}
+                      onStartRound={handleStartRound}
+                      onResolveRound={handleResolveRound}
+                      onResetGame={handleResetGame}
                       onLeaveRoom={handleLeaveRoom}
                     />
-                  )}
+                  ) : (
+                    <RoleRevealScreen
+                      phase={phase === GamePhase.REVEAL ? 'REVEAL' : 'WAITING_FOR_OTHERS'}
+                      role={me?.role}
+                      players={players}
+                      isBusy={isBusy}
+                      onConfirmRole={handleConfirm}
+                      onLeaveRoom={handleLeaveRoom}
+                    />
+                  )
+                )}
 
-                  {(phase === GamePhase.REVEAL || phase === GamePhase.WAITING_FOR_OTHERS) && (
-                    me?.isNarrator ? (
-                      <NarratorScreen
-                        roomStatus={room?.status}
-                        roundState={roundState ?? null}
-                        isCasualMode={isCasualMode}
-                        alivePlayers={alivePlayers}
-                        gameResult={gameResult}
-                        isBusy={isBusy}
-                        votedPlayers={votedPlayers}
-                        pendingVoters={pendingVoters}
-                        roundActionSummary={roundActionSummary}
-                        roundInspectorPreview={roundInspectorPreview}
-                        playerNameById={playerNameById}
-                        players={players}
-                        eliminatedPlayerIds={eliminatedPlayerIds}
-                        me={me ?? null}
-                        onStartRound={handleStartRound}
-                        onResolveRound={handleResolveRound}
-                        onResetGame={handleResetGame}
-                        onLeaveRoom={handleLeaveRoom}
-                      />
-                    ) : (
-                      <RoleRevealScreen
-                        phase={phase === GamePhase.REVEAL ? 'REVEAL' : 'WAITING_FOR_OTHERS'}
-                        role={me?.role}
-                        players={players}
-                        isBusy={isBusy}
-                        onConfirmRole={handleConfirm}
-                        onLeaveRoom={handleLeaveRoom}
-                      />
-                    )
-                  )}
-
-                  {phase === GamePhase.READY_TO_PLAY && (
-                    me?.isNarrator ? (
-                      <NarratorScreen
-                        roomStatus={room?.status}
-                        roundState={roundState ?? null}
-                        isCasualMode={isCasualMode}
-                        alivePlayers={alivePlayers}
-                        gameResult={gameResult}
-                        isBusy={isBusy}
-                        votedPlayers={votedPlayers}
-                        pendingVoters={pendingVoters}
-                        roundActionSummary={roundActionSummary}
-                        roundInspectorPreview={roundInspectorPreview}
-                        playerNameById={playerNameById}
-                        players={players}
-                        eliminatedPlayerIds={eliminatedPlayerIds}
-                        me={me ?? null}
-                        onStartRound={handleStartRound}
-                        onResolveRound={handleResolveRound}
-                        onResetGame={handleResetGame}
-                        onLeaveRoom={handleLeaveRoom}
-                      />
-                    ) : (
-                      <div className="text-center space-y-5 sm:space-y-6 py-4">
-                        {gameResult ? (
-                          <div>
-                            <h2 className="title-font text-3xl text-[color:var(--ink)]">Game over</h2>
-                            <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                              {gameResult.winner === 'city' ? 'The town wins.' : 'The Mafia wins.'}
-                            </p>
+                {phase === GamePhase.READY_TO_PLAY && (
+                  me?.isNarrator ? (
+                    <NarratorScreen
+                      roomStatus={room?.status}
+                      roundState={roundState ?? null}
+                      isCasualMode={isCasualMode}
+                      alivePlayers={alivePlayers}
+                      gameResult={gameResult}
+                      isBusy={isBusy}
+                      votedPlayers={votedPlayers}
+                      pendingVoters={pendingVoters}
+                      roundActionSummary={roundActionSummary}
+                      roundInspectorPreview={roundInspectorPreview}
+                      playerNameById={playerNameById}
+                      players={players}
+                      eliminatedPlayerIds={eliminatedPlayerIds}
+                      me={me ?? null}
+                      onStartRound={handleStartRound}
+                      onResolveRound={handleResolveRound}
+                      onResetGame={handleResetGame}
+                      onLeaveRoom={handleLeaveRoom}
+                    />
+                  ) : (
+                    <div className="space-y-6">
+                      {gameResult ? (
+                        <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-soft)] p-6 text-center space-y-2">
+                          <div className="h-12 w-12 mx-auto rounded-xl bg-red-500/10 text-red-600 flex items-center justify-center text-xl">
+                            <i className="fas fa-trophy"></i>
                           </div>
-                        ) : isCasualMode ? (
-                          <div>
-                            <h2 className="title-font text-3xl text-[color:var(--ink)]">Role-only mode</h2>
-                            <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                              Roles are assigned. Continue night actions, discussion, and voting in person.
-                            </p>
-                          </div>
-                        ) : roundState?.phase === 'night' && me?.role === Role.MAFIA ? (
-                          <div>
-                            <h2 className="title-font text-3xl text-[color:var(--ink)]">Mafia night</h2>
-                            <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                              Use the private Mafia chat to agree on a target.
-                            </p>
-                          </div>
-                        ) : roundState?.phase === 'night' && myNightActionType && me?.role !== Role.MAFIA ? (
-                          <NightActionCard
-                            role={me?.role}
-                            targetId={nightTargetId}
-                            availableTargets={availableNightTargets}
-                            lastSubmittedTargetName={mySubmittedAction?.targetName}
-                            isBusy={isBusy}
-                            onTargetChange={setNightTargetId}
-                            onSubmit={handleSubmitNightAction}
-                          />
-                        ) : roundState?.phase === 'night' ? (
-                          <div>
-                            <h2 className="title-font text-3xl text-[color:var(--ink)]">Night is in progress</h2>
-                            <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                              Your role has no night action. Waiting for the other players and the narrator.
-                            </p>
-                          </div>
-                        ) : roundState?.phase === 'voting' ? (
-                          <VotingCard
-                            targetId={voteTargetId}
-                            alivePlayers={alivePlayers}
-                            votedPlayers={votedPlayers}
-                            pendingVoters={pendingVoters}
-                            mySubmittedVote={mySubmittedVote ?? undefined}
-                            isBusy={isBusy}
-                            onTargetChange={setVoteTargetId}
-                            onSubmitVote={handleFinishVoting}
-                          />
-                        ) : (
-                          <div>
-                            <h2 className="title-font text-3xl text-[color:var(--ink)]">Ready for the next round</h2>
-                            <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                              Waiting for the narrator to start the next night.
-                            </p>
-                          </div>
-                        )}
-
-                        <div className="h-px bg-[color:var(--line)] w-full"></div>
-                        <div className="space-y-3">
-                          {me?.isHost && (
-                            <button
-                              onClick={handleResetGame}
-                              disabled={isBusy}
-                              className="w-full rounded-2xl bg-[var(--ink)] py-3 text-[11px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
-                            >
-                              Assign new roles
-                            </button>
-                          )}
-                          <button
-                            onClick={handleLeaveRoom}
-                            className="w-full rounded-2xl border border-red-500/40 bg-red-600 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-white hover:bg-red-500 transition"
-                          >
-                            Leave room
-                          </button>
+                          <h2 className="font-display text-2xl font-bold text-[color:var(--ink)]">Game Over</h2>
+                          <p className="text-xs text-[color:var(--ink-muted)]">
+                            {gameResult.winner === 'city' ? 'The townspeople have eliminated the Mafia!' : 'The Mafia syndicate has taken control of the town!'}
+                          </p>
                         </div>
+                      ) : isCasualMode ? (
+                        <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-soft)] p-6 text-center space-y-2">
+                          <div className="h-10 w-10 mx-auto rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center text-lg">
+                            <i className="fas fa-masks-theater"></i>
+                          </div>
+                          <h2 className="font-display text-xl font-bold text-[color:var(--ink)]">Role-Only Mode Active</h2>
+                          <p className="text-xs text-[color:var(--ink-muted)] max-w-md mx-auto leading-relaxed">
+                            Roles are assigned. Continue night actions, accusations, and voting live in person.
+                          </p>
+                        </div>
+                      ) : roundState?.phase === 'night' && me?.role === Role.MAFIA ? (
+                        <div className="rounded-xl border border-red-500/25 bg-red-500/5 p-6 text-center space-y-3">
+                          <div className="h-12 w-12 mx-auto rounded-xl bg-red-500/10 text-red-600 flex items-center justify-center text-xl">
+                            <i className="fas fa-user-secret"></i>
+                          </div>
+                          <h2 className="font-display text-2xl font-bold text-[color:var(--ink)]">Syndicate Night</h2>
+                          <p className="text-xs text-[color:var(--ink-muted)] max-w-md mx-auto">
+                            The Mafia chat channel is active. Conspire with your team to select tonight's target.
+                          </p>
+                        </div>
+                      ) : roundState?.phase === 'night' && myNightActionType && me?.role !== Role.MAFIA ? (
+                        <NightActionCard
+                          role={me?.role}
+                          targetId={nightTargetId}
+                          availableTargets={availableNightTargets}
+                          lastSubmittedTargetName={mySubmittedAction?.targetName}
+                          isBusy={isBusy}
+                          onTargetChange={setNightTargetId}
+                          onSubmit={handleSubmitNightAction}
+                        />
+                      ) : roundState?.phase === 'night' ? (
+                        <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-soft)] p-6 text-center space-y-2">
+                          <div className="h-10 w-10 mx-auto rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center text-lg">
+                            <i className="fas fa-moon"></i>
+                          </div>
+                          <h2 className="font-display text-xl font-bold text-[color:var(--ink)]">The Town Sleeps</h2>
+                          <p className="text-xs text-[color:var(--ink-muted)] max-w-md mx-auto">
+                            Your role takes no night action. Waiting for other roles and the narrator.
+                          </p>
+                        </div>
+                      ) : roundState?.phase === 'voting' ? (
+                        <VotingCard
+                          targetId={voteTargetId}
+                          alivePlayers={alivePlayers}
+                          votedPlayers={votedPlayers}
+                          pendingVoters={pendingVoters}
+                          mySubmittedVote={mySubmittedVote ?? undefined}
+                          isBusy={isBusy}
+                          onTargetChange={setVoteTargetId}
+                          onSubmitVote={handleFinishVoting}
+                        />
+                      ) : (
+                        <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-soft)] p-6 text-center space-y-2">
+                          <div className="h-10 w-10 mx-auto rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center text-lg">
+                            <i className="fas fa-hourglass-start"></i>
+                          </div>
+                          <h2 className="font-display text-xl font-bold text-[color:var(--ink)]">Awaiting Next Round</h2>
+                          <p className="text-xs text-[color:var(--ink-muted)] max-w-md mx-auto">
+                            Waiting for the narrator to initiate the next phase.
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="pt-3 border-t border-[color:var(--line)] space-y-2">
+                        {me?.isHost && (
+                          <button
+                            type="button"
+                            onClick={handleResetGame}
+                            disabled={isBusy}
+                            className="w-full py-2.5 rounded-xl bg-[var(--ink)] text-[var(--paper)] text-xs font-semibold hover:opacity-90 disabled:opacity-40 transition btn-tactile"
+                          >
+                            Assign New Roles
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={handleLeaveRoom}
+                          className="w-full py-2.5 rounded-xl border border-[color:var(--line)] text-xs font-medium text-[color:var(--ink-muted)] hover:text-red-600 hover:border-red-500/30 transition btn-tactile"
+                        >
+                          Leave Room
+                        </button>
                       </div>
-                    )
-                  )}
-                </main>
-              </div>
+                    </div>
+                  )
+                )}
+              </main>
             </div>
           </div>
 
