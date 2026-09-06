@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  CustomRoleSetting,
   GamePhase,
   Role,
   RoomData,
@@ -8,7 +7,6 @@ import {
   RoundActionType,
   RoundState,
 } from './types';
-import { getRoleDescription, getRoleIcon } from './constants';
 import {
   confirmRole,
   finishVoting,
@@ -24,6 +22,20 @@ import {
   submitRoundAction,
   updateSettings,
 } from './services/roomApi';
+import { clampCustomRoleCount, mergeCustomRole } from './utils/gameUtils';
+import { useTheme } from './hooks/useTheme';
+import { Header } from './components/Header';
+import { Footer } from './components/Footer';
+import { EntryScreen } from './components/EntryScreen';
+import { LobbyScreen } from './components/LobbyScreen';
+import { RoleRevealScreen } from './components/RoleRevealScreen';
+import { NarratorScreen } from './components/NarratorScreen';
+import { GraveyardScreen } from './components/GraveyardScreen';
+import { NightActionCard } from './components/NightActionCard';
+import { VotingCard } from './components/VotingCard';
+import { GameResultModal } from './components/Modals/GameResultModal';
+import { VoteSummaryModal } from './components/Modals/VoteSummaryModal';
+import { MafiaChatModal } from './components/Modals/MafiaChatModal';
 
 const DEFAULT_SETTINGS: RoomSettings = {
   mafiaCount: 1,
@@ -199,11 +211,9 @@ const normalizeRoundState = (raw: any): RoundState | null => {
 };
 
 type EntryMode = 'join' | 'create';
-type ThemeMode = 'light' | 'dark';
 
 const generateRoomCode = () => Math.floor(100000 + Math.random() * 900000).toString();
 const SESSION_KEY = 'mafia_session_v2';
-const THEME_KEY = 'mafia_theme_v1';
 
 const App: React.FC = () => {
   const [entryMode, setEntryMode] = useState<EntryMode>('join');
@@ -230,14 +240,9 @@ const App: React.FC = () => {
   const [dismissedGameResultKey, setDismissedGameResultKey] = useState('');
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
   const [hasRestoredSession, setHasRestoredSession] = useState(false);
-  const [theme, setTheme] = useState<ThemeMode>(() => {
-    const stored = localStorage.getItem(THEME_KEY);
-    if (stored === 'light' || stored === 'dark') return stored;
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark';
-    }
-    return 'light';
-  });
+
+  const { theme, toggleTheme } = useTheme();
+
   const [clientId] = useState(() => {
     const stored = localStorage.getItem('mafia_client_id');
     if (stored) return stored;
@@ -245,13 +250,8 @@ const App: React.FC = () => {
     localStorage.setItem('mafia_client_id', generated);
     return generated;
   });
-  const graveyardChatRef = useRef<HTMLDivElement | null>(null);
-  const mafiaChatRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    localStorage.setItem(THEME_KEY, theme);
-  }, [theme]);
+  const graveyardChatRef = useRef<HTMLDivElement | null>(null);
 
   const loadRoomById = useCallback(async (id: string) => {
     if (!roomCode) return;
@@ -685,6 +685,7 @@ const App: React.FC = () => {
 
   const lastVoteSummary = roundState?.lastVoteSummary ?? null;
   const gameResult = roundState?.gameResult ?? null;
+
   const voteSummaryModalKey = useMemo(() => {
     if (!roundState || !lastVoteSummary) return '';
     const countsKey = lastVoteSummary.voteCounts
@@ -692,6 +693,7 @@ const App: React.FC = () => {
       .join('|');
     return `${roundState.round}:${lastVoteSummary.completedVoters}:${lastVoteSummary.totalVoters}:${lastVoteSummary.eliminatedPlayerId || 'none'}:${countsKey}`;
   }, [roundState, lastVoteSummary]);
+
   const gameResultModalKey = useMemo(() => {
     if (!gameResult) return '';
     return `${gameResult.winner}:${gameResult.round}:${gameResult.createdAt}:${gameResult.message}`;
@@ -733,13 +735,6 @@ const App: React.FC = () => {
     if (!chatEl) return;
     chatEl.scrollTop = chatEl.scrollHeight;
   }, [graveyardMessages.length, isMeEliminated]);
-
-  useEffect(() => {
-    if (!isMafiaNightChatOpen) return;
-    const chatEl = mafiaChatRef.current;
-    if (!chatEl) return;
-    chatEl.scrollTop = chatEl.scrollHeight;
-  }, [mafiaMessages.length, isMafiaNightChatOpen]);
 
   useEffect(() => {
     if (roundState?.phase !== 'voting' || !mySubmittedVote?.targetId) return;
@@ -787,7 +782,6 @@ const App: React.FC = () => {
     return { mafia, doctor, detective, lady };
   }, [roundState?.actions]);
 
-
   const handleModeChange = (mode: EntryMode) => {
     setEntryMode(mode);
     setErrorMessage('');
@@ -813,47 +807,6 @@ const App: React.FC = () => {
       setTimeout(() => setCopyStatus('idle'), 1500);
     }
   };
-
-  const handleThemeToggle = () => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
-  };
-
-  const clampCustomRoleCount = (value: number) => Math.max(1, Math.min(10, value));
-
-  const mergeCustomRole = (roles: CustomRoleSetting[], name: string, count: number) => {
-    const trimmed = name.trim();
-    if (!trimmed) return roles;
-    const normalized = trimmed.toLowerCase();
-    const existingIndex = roles.findIndex((role) => role.name.toLowerCase() === normalized);
-    if (existingIndex < 0) return [...roles, { name: trimmed, count }];
-    return roles.map((role, index) =>
-      index === existingIndex ? { ...role, count: clampCustomRoleCount(role.count + count) } : role,
-    );
-  };
-
-  const themeToggleFloating = (
-    <button
-      type="button"
-      onClick={handleThemeToggle}
-      className="hidden md:flex fixed right-4 top-4 sm:right-6 sm:top-6 z-50 h-11 w-11 items-center justify-center rounded-full border border-[color:var(--line)] bg-[var(--surface-strong)] text-[color:var(--ink)] hover:opacity-80 transition"
-      aria-label="Change theme"
-      title={theme === 'light' ? 'Use dark theme' : 'Use light theme'}
-    >
-      <i className={`fas ${theme === 'light' ? 'fa-moon' : 'fa-sun'}`}></i>
-    </button>
-  );
-
-  const themeToggleInline = (
-    <button
-      type="button"
-      onClick={handleThemeToggle}
-      className="md:hidden h-10 w-10 rounded-full border border-[color:var(--line)] bg-[var(--surface-strong)] text-[color:var(--ink)] hover:opacity-80 transition"
-      aria-label="Change theme"
-      title={theme === 'light' ? 'Use dark theme' : 'Use light theme'}
-    >
-      <i className={`fas ${theme === 'light' ? 'fa-moon' : 'fa-sun'}`}></i>
-    </button>
-  );
 
   const handleDraftMafiaChange = (delta: number) => {
     setDraftSettings((prev) => ({
@@ -948,53 +901,6 @@ const App: React.FC = () => {
     setShowVoteSummaryModal(false);
   };
 
-  const renderVoteSummaryModal = () => {
-    if (room?.status !== 'finished' || !lastVoteSummary || !showVoteSummaryModal || !!gameResult) return null;
-
-    return (
-      <div
-        className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 px-4 py-6"
-        onClick={closeVoteSummaryModal}
-      >
-        <div
-          className="w-full max-w-md rounded-3xl border border-[color:var(--line)] bg-[var(--surface)] p-5 space-y-3 text-left shadow-2xl"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <div>
-            <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">
-              Voting result
-            </p>
-            <h3 className="mt-1 title-font text-2xl text-[color:var(--ink)]">
-              {lastVoteSummary.eliminatedPlayerName
-                ? `${lastVoteSummary.eliminatedPlayerName} was eliminated`
-                : 'No player was eliminated'}
-            </h3>
-          </div>
-          <div className="text-xs text-[color:var(--ink-muted)]">
-            Votes submitted: {lastVoteSummary.completedVoters}/{lastVoteSummary.totalVoters}
-          </div>
-          <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1">
-            {lastVoteSummary.voteCounts.map((entry) => (
-              <div
-                key={entry.playerId}
-                className="flex items-center justify-between rounded-lg border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-sm text-[color:var(--ink-muted)]"
-              >
-                <span>{entry.playerName}</span>
-                <span className="font-semibold text-[color:var(--ink)]">{entry.votes}</span>
-              </div>
-            ))}
-          </div>
-          <button
-            onClick={closeVoteSummaryModal}
-            className="w-full rounded-xl bg-[var(--ink)] py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90"
-          >
-            Continue
-          </button>
-        </div>
-      </div>
-    );
-  };
-
   const closeGameResultModal = () => {
     if (gameResultModalKey) {
       setDismissedGameResultKey(gameResultModalKey);
@@ -1002,344 +908,28 @@ const App: React.FC = () => {
     setShowGameResultModal(false);
   };
 
-  const renderGameResultModal = () => {
-    if (room?.status !== 'finished' || !gameResult || !showGameResultModal) return null;
+  const themeToggleFloating = (
+    <button
+      type="button"
+      onClick={toggleTheme}
+      className="hidden md:flex fixed right-4 top-4 sm:right-6 sm:top-6 z-50 h-11 w-11 items-center justify-center rounded-full border border-[color:var(--line)] bg-[var(--surface-strong)] text-[color:var(--ink)] hover:opacity-80 transition"
+      aria-label="Change theme"
+      title={theme === 'light' ? 'Use dark theme' : 'Use light theme'}
+    >
+      <i className={`fas ${theme === 'light' ? 'fa-moon' : 'fa-sun'}`}></i>
+    </button>
+  );
 
-    const title = gameResult.winner === 'city' ? 'The town wins' : 'The Mafia wins';
-    return (
-      <div
-        className="fixed inset-0 z-[90] flex items-center justify-center bg-black/65 px-4 py-6"
-        onClick={closeGameResultModal}
-      >
-        <div
-          className="w-full max-w-md rounded-3xl border border-[color:var(--line)] bg-[var(--surface)] p-6 text-center shadow-2xl"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <p className="text-[10px] uppercase tracking-[0.24em] text-[color:var(--ink-faint)]">Game over</p>
-          <h3 className="mt-2 title-font text-3xl text-[color:var(--ink)]">{title}</h3>
-          <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-            {gameResult.message || title}
-          </p>
-          <button
-            onClick={closeGameResultModal}
-            className="mt-5 w-full rounded-xl bg-[var(--ink)] py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90"
-          >
-            Continue
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  const renderMafiaNightModal = () => {
-    if (!isMafiaNightChatOpen) return null;
-
-    return (
-      <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/60 px-4 py-6">
-        <div className="w-full max-w-3xl rounded-3xl border border-[color:var(--line)] bg-[var(--surface)] p-5 shadow-2xl">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Mafia chat</p>
-              <h3 className="title-font text-2xl text-[color:var(--ink)]">Choose a target together</h3>
-            </div>
-            <span className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--ink-soft)]">
-              Round {roundState?.round || 0}
-            </span>
-          </div>
-
-          <div
-            ref={mafiaChatRef}
-            className="mt-4 h-[44vh] min-h-[260px] overflow-y-auto space-y-2 rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-3"
-          >
-            {mafiaMessages.length ? (
-              mafiaMessages.map((message) => {
-                const isMine = message.senderId === me?.id;
-                return (
-                  <div key={message.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-                    <div
-                      className={`max-w-[86%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
-                        isMine
-                          ? 'rounded-br-md bg-red-600 text-white'
-                          : 'rounded-bl-md border border-[color:var(--line)] bg-[var(--surface)] text-[color:var(--ink)]'
-                      }`}
-                    >
-                      {!isMine && (
-                        <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--ink-faint)]">
-                          {message.senderName}
-                        </div>
-                      )}
-                      <div className="break-words whitespace-pre-wrap">{message.message}</div>
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <p className="text-xs text-[color:var(--ink-soft)]">No Mafia messages yet.</p>
-            )}
-          </div>
-
-          <div className="mt-3 grid gap-2 sm:grid-cols-[1fr,auto] sm:items-end">
-            <textarea
-              value={mafiaDraftMessage}
-              onChange={(event) => setMafiaDraftMessage(event.target.value)}
-              placeholder="Message your Mafia team..."
-              className="min-h-[82px] w-full resize-y rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-sm text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
-            />
-            <button
-              onClick={handleSendMafiaMessage}
-              disabled={isBusy || !mafiaDraftMessage.trim()}
-              className="w-full rounded-xl bg-[var(--ink)] px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60 sm:w-auto sm:min-h-[82px]"
-            >
-              Send
-            </button>
-          </div>
-
-          <div className="mt-4 rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-3 space-y-2">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]">Target selection</p>
-            <select
-              value={nightTargetId}
-              onChange={(event) => setNightTargetId(event.target.value)}
-              className="w-full rounded-xl border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[color:var(--ink)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
-            >
-              <option value="">Choose a player</option>
-              {availableNightTargets.map((player) => (
-                <option key={player.id} value={player.id}>
-                  {player.name}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={handleSubmitNightAction}
-              disabled={isBusy || !nightTargetId}
-              className="w-full rounded-xl bg-[var(--ink)] py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
-            >
-              Confirm target
-            </button>
-            {mySubmittedAction && (
-              <p className="text-xs text-[color:var(--ink-muted)]">Last selection: {mySubmittedAction.targetName}</p>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const narratorPanel = (
-    <div className="text-center space-y-5 sm:space-y-6 py-2">
-      <div>
-        <h2 className="title-font text-3xl text-[color:var(--ink)]">Narrator</h2>
-        <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-          You guide the game, see every role, and manage rounds without voting.
-        </p>
-        {room?.status === 'finished' && (
-          <p className="mt-2 text-xs uppercase tracking-[0.3em] text-emerald-600">
-            {isCasualMode ? 'Role-only mode is active' : `Everyone has seen their role. Round ${roundState?.round || 0}`}
-          </p>
-        )}
-      </div>
-
-      {room?.status === 'finished' && (
-        <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-3 text-left">
-          <div className="flex items-center justify-between">
-            <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">
-              {isCasualMode ? 'Role-only mode' : 'Round controls'}
-            </p>
-            <span className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--ink-soft)]">
-              {isCasualMode ? 'Continue the game in person' : `Phase: ${roundState?.phase || 'idle'}`}
-            </span>
-          </div>
-
-          <div className="text-xs text-[color:var(--ink-muted)]">
-            Active players: {alivePlayers.length}
-          </div>
-          <div className="text-xs text-[color:var(--ink-muted)]">
-            Alive: {alivePlayers.length ? alivePlayers.map((player) => player.name).join(', ') : 'none'}
-          </div>
-          {gameResult && (
-            <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-xs text-[color:var(--ink-muted)]">
-              Game over: {gameResult.winner === 'city' ? 'The town wins.' : 'The Mafia wins.'}
-            </div>
-          )}
-          {isCasualMode && (
-            <p className="text-xs text-[color:var(--ink-muted)]">
-              This mode only assigns and reveals roles. Night actions, discussion, and voting happen in person.
-            </p>
-          )}
-
-          {!isCasualMode && !gameResult && (roundState?.phase === 'idle' || !roundState) && (
-            <button
-              onClick={handleStartRound}
-              disabled={isBusy}
-              className="w-full rounded-xl bg-[var(--ink)] py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
-            >
-              Start night round
-            </button>
-          )}
-
-          {!isCasualMode && !gameResult && roundState?.phase === 'night' && (
-            <button
-              onClick={handleResolveRound}
-              disabled={isBusy}
-              className="w-full rounded-xl bg-[var(--ink)] py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
-            >
-              Resolve night
-            </button>
-          )}
-
-          {!isCasualMode && !gameResult && roundState?.phase === 'voting' && (
-            <div className="space-y-2">
-              <div className="text-xs text-[color:var(--ink-muted)]">
-                Votes submitted: {votedPlayers.length}/{alivePlayers.length}
-              </div>
-              <div className="text-xs text-[color:var(--ink-muted)]">
-                Voted: {votedPlayers.length ? votedPlayers.map((player) => player.name).join(', ') : 'nobody'}
-              </div>
-              <div className="text-xs text-[color:var(--ink-muted)]">
-                Waiting for: {pendingVoters.length ? pendingVoters.map((player) => player.name).join(', ') : 'all votes are in'}
-              </div>
-              <p className="text-[11px] text-[color:var(--ink-soft)]">
-                The result appears automatically after every living player submits a vote.
-              </p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {!isCasualMode && room?.status === 'finished' && roundState?.phase === 'night' && (
-        <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2 text-left">
-          <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Tonight's actions</p>
-          <div className="text-xs text-[color:var(--ink-muted)]">
-            Mafia targets:{' '}
-            {roundActionSummary.mafia.length
-              ? roundActionSummary.mafia.map((item) => item.targetName).join(', ')
-              : 'no selection'}
-          </div>
-          <div className="text-xs text-[color:var(--ink-muted)]">
-            Silencer blocks: {roundActionSummary.lady?.targetName || 'no selection'}
-          </div>
-          <div className="text-xs text-[color:var(--ink-muted)]">
-            Doctor protects: {roundActionSummary.doctor?.targetName || 'no selection'}
-          </div>
-          <div className="text-xs text-[color:var(--ink-muted)]">
-            Detective investigates: {roundInspectorPreview?.targetName || roundActionSummary.detective?.targetName || 'no selection'}
-            {roundInspectorPreview && ` (${roundInspectorPreview.isMafia ? 'Mafia' : 'not Mafia'})`}
-          </div>
-        </div>
-      )}
-
-      {!isCasualMode && room?.status === 'finished' && roundState?.lastResult && (
-        <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2 text-left">
-          <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Previous night</p>
-          <div className="text-xs text-[color:var(--ink-muted)]">
-            Mafia eliminated: {roundState.lastResult.killedPlayerId ? playerNameById.get(roundState.lastResult.killedPlayerId) : 'nobody'}
-          </div>
-          <div className="text-xs text-[color:var(--ink-muted)]">
-            Detective investigated: {roundState.lastResult.inspectorTargetId ? playerNameById.get(roundState.lastResult.inspectorTargetId) : 'nobody'}
-            {roundState.lastResult.inspectorTargetId &&
-              ` - ${roundState.lastResult.inspectorIsMafia ? 'Mafia' : 'not Mafia'}`}
-          </div>
-          <div className="text-xs text-[color:var(--ink-muted)]">
-            Doctor protected: {roundState.lastResult.doctorTargetId ? playerNameById.get(roundState.lastResult.doctorTargetId) : 'nobody'}
-            {roundState.lastResult.doctorSaved ? ' (successful save)' : ''}
-          </div>
-          <div className="text-xs text-[color:var(--ink-muted)]">
-            Silencer blocked: {roundState.lastResult.ladyTargetId ? playerNameById.get(roundState.lastResult.ladyTargetId) : 'nobody'}
-          </div>
-        </div>
-      )}
-
-      {!isCasualMode && room?.status === 'finished' && roundState?.events?.length ? (
-        <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2 text-left">
-          <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Round history</p>
-          <div className="max-h-52 overflow-y-auto space-y-1.5 pr-1">
-            {[...roundState.events].slice(-14).reverse().map((event) => (
-              <div
-                key={event.id}
-                className="rounded-lg border border-[color:var(--line)] bg-[var(--surface-strong)] px-2.5 py-2 text-xs text-[color:var(--ink-muted)]"
-              >
-                <span className="text-[10px] uppercase tracking-[0.14em] text-[color:var(--ink-soft)]">
-                  Round {event.round}
-                </span>
-                <div className="mt-1">{event.message}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-3">
-        <p className="text-[10px] uppercase tracking-[0.22em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Player roles</p>
-        {players
-          .filter((player) => !player.isNarrator)
-          .map((player) => (
-            (() => {
-              const role = player.role || Role.VILLAGER;
-              const nameTone =
-                role === Role.MAFIA
-                  ? 'text-red-600'
-                  : role === Role.DOCTOR
-                    ? 'text-emerald-600'
-                    : role === Role.DETECTIVE
-                      ? 'text-amber-600'
-                      : role === Role.LADY
-                        ? 'text-red-500'
-                        : 'text-[color:var(--ink)]';
-
-              return (
-            <div
-              key={player.id}
-              className="flex min-w-0 flex-col items-start gap-2 rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <span className={`w-full min-w-0 break-words text-left text-sm font-bold ${nameTone}`}>
-                {player.name} {eliminatedPlayerIds.has(player.id) ? '(eliminated)' : ''}
-              </span>
-              <span className="flex w-full items-center gap-2 text-[10px] uppercase tracking-[0.2em] sm:w-auto sm:tracking-[0.3em]">
-                <span className="text-base leading-none text-[color:var(--ink)]">
-                  {getRoleIcon(player.role || Role.VILLAGER)}
-                </span>
-                <span className="break-words">{player.role || 'Role'}</span>
-              </span>
-            </div>
-              );
-            })()
-          ))}
-      </div>
-      <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2">
-        <p className="text-[10px] uppercase tracking-[0.22em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Role confirmations</p>
-        {players
-          .filter((player) => !player.isNarrator)
-          .map((player) => (
-            <div
-              key={player.id}
-              className="flex items-center justify-between gap-3 text-[10px] uppercase tracking-[0.16em] sm:tracking-[0.35em]"
-            >
-              <span className={`min-w-0 flex-1 break-words text-left font-semibold ${player.hasConfirmed ? 'text-emerald-600' : 'text-[color:var(--ink-soft)]'}`}>
-                {player.name}
-              </span>
-              {player.hasConfirmed ? (
-                <i className="fas fa-check text-[10px]"></i>
-              ) : (
-                <i className="fas fa-clock text-[10px] text-[color:var(--ink-soft)]"></i>
-              )}
-            </div>
-          ))}
-      </div>
-      {me?.isHost && (
-        <button
-          onClick={handleResetGame}
-          disabled={isBusy}
-          className="w-full rounded-2xl bg-[var(--ink)] py-3 text-[11px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
-        >
-          Assign new roles
-        </button>
-      )}
-      <button
-        onClick={handleLeaveRoom}
-        className="w-full rounded-2xl border border-red-500/40 bg-red-600 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-white hover:bg-red-500 transition"
-      >
-        Leave room
-      </button>
-    </div>
+  const themeToggleInline = (
+    <button
+      type="button"
+      onClick={toggleTheme}
+      className="md:hidden h-10 w-10 rounded-full border border-[color:var(--line)] bg-[var(--surface-strong)] text-[color:var(--ink)] hover:opacity-80 transition"
+      aria-label="Change theme"
+      title={theme === 'light' ? 'Use dark theme' : 'Use light theme'}
+    >
+      <i className={`fas ${theme === 'light' ? 'fa-moon' : 'fa-sun'}`}></i>
+    </button>
   );
 
   useEffect(() => {
@@ -1384,17 +974,17 @@ const App: React.FC = () => {
         {themeToggleFloating}
         <div className="app-shell flex min-h-screen items-center justify-center px-4 py-6 sm:px-5 sm:py-12">
           <div className="w-full max-w-md rounded-[28px] border border-[color:var(--line)] bg-[var(--surface)] px-6 py-8 sm:px-8 sm:py-10 relative">
-              <div className="flex items-start justify-between gap-4">
-                <div>
+            <div className="flex items-start justify-between gap-4">
+              <div>
                 <p className="text-[11px] uppercase tracking-[0.24em] sm:tracking-[0.4em] text-[color:var(--ink-faint)]">Preparing your room</p>
-                  <div className="flex items-center gap-2">
-                    <img src="/favicon.png" alt="Mafia Night Game" className="h-7 w-7 rounded-md" />
-                    <h1 className="title-font text-3xl text-[color:var(--ink)]">MAFIA</h1>
-                  </div>
-                  <p className="mt-2 text-xs text-[color:var(--ink-muted)]">Connecting you to the game.</p>
+                <div className="flex items-center gap-2">
+                  <img src="/favicon.png" alt="Mafia Night Game" className="h-7 w-7 rounded-md" />
+                  <h1 className="title-font text-3xl text-[color:var(--ink)]">MAFIA</h1>
                 </div>
-                {themeToggleInline}
+                <p className="mt-2 text-xs text-[color:var(--ink-muted)]">Connecting you to the game.</p>
               </div>
+              {themeToggleInline}
+            </div>
             <div className="mt-6 sm:mt-8 rounded-2xl border border-[color:var(--line)] bg-[var(--surface-soft)] p-4">
               <div className="flex justify-center space-x-2">
                 <div className="h-2.5 w-2.5 rounded-full bg-red-500 animate-bounce"></div>
@@ -1411,97 +1001,30 @@ const App: React.FC = () => {
 
   if (isFocusedGraveyardMode) {
     return (
-      <div className="app-bg">
-        {themeToggleFloating}
-        <div className="app-shell flex min-h-screen items-center justify-center px-4 py-6 sm:px-6 sm:py-10">
-          <div className="w-full max-w-6xl">
-            <div className="relative">
-              <div className="absolute -inset-1 rounded-[36px] bg-gradient-to-br from-red-500/45 via-red-400/20 to-transparent blur-2xl"></div>
-              <div className="relative overflow-hidden rounded-[32px] border border-[color:var(--line)] bg-[var(--surface)]">
-                <div className="p-5 sm:p-8 md:p-10">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h2 className="title-font text-3xl sm:text-4xl text-[color:var(--ink)]">Graveyard</h2>
-                      <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                        Private chat for eliminated players.
-                      </p>
-                      {gameResult && (
-                        <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                          Game over: {gameResult.winner === 'city' ? 'The town wins.' : 'The Mafia wins.'}
-                        </p>
-                      )}
-                    </div>
-                    {themeToggleInline}
-                  </div>
-
-                  <div className="mt-5 rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 text-left space-y-3">
-                    <div
-                      ref={graveyardChatRef}
-                      className="h-[62vh] min-h-[360px] max-h-[720px] overflow-y-auto space-y-2 rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-3"
-                    >
-                      {graveyardMessages.length ? (
-                        graveyardMessages.map((message) => {
-                          const isMine = message.senderId === me?.id;
-                          return (
-                            <div
-                              key={message.id}
-                              className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
-                            >
-                              <div
-                                className={`max-w-[86%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
-                                  isMine
-                                    ? 'rounded-br-md bg-red-600 text-white'
-                                    : 'rounded-bl-md border border-[color:var(--line)] bg-[var(--surface)] text-[color:var(--ink)]'
-                                }`}
-                              >
-                                {!isMine && (
-                                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--ink-faint)]">
-                                    {message.senderName}
-                                  </div>
-                                )}
-                                <div className="break-words whitespace-pre-wrap">{message.message}</div>
-                              </div>
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <p className="text-xs text-[color:var(--ink-soft)]">No messages yet.</p>
-                      )}
-                    </div>
-                    <div className="grid gap-2 sm:grid-cols-[1fr,auto] sm:items-end">
-                      <textarea
-                        value={graveyardDraftMessage}
-                        onChange={(event) => setGraveyardDraftMessage(event.target.value)}
-                        placeholder="Message the graveyard..."
-                        className="min-h-[86px] w-full resize-y rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-sm text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
-                      />
-                      <button
-                        onClick={handleSendGraveyardMessage}
-                        disabled={isBusy || !graveyardDraftMessage.trim()}
-                        className="w-full rounded-xl bg-[var(--ink)] px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60 sm:w-auto sm:min-h-[86px]"
-                      >
-                        Send
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 flex justify-end">
-                    <button
-                      onClick={handleLeaveRoom}
-                      className="rounded-2xl border border-red-500/40 bg-red-600 px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-white hover:bg-red-500 transition"
-                    >
-                      Leave room
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {renderGameResultModal()}
-            {renderVoteSummaryModal()}
-          </div>
-        </div>
-      </div>
+      <GraveyardScreen
+        gameResult={gameResult}
+        messages={graveyardMessages}
+        currentUserId={me?.id}
+        draftMessage={graveyardDraftMessage}
+        onDraftMessageChange={setGraveyardDraftMessage}
+        onSendMessage={handleSendGraveyardMessage}
+        isBusy={isBusy}
+        chatRef={graveyardChatRef}
+        onLeaveRoom={handleLeaveRoom}
+        themeToggleFloating={themeToggleFloating}
+        themeToggleInline={themeToggleInline}
+      >
+        <GameResultModal
+          isOpen={showGameResultModal && room?.status === 'finished' && !!gameResult}
+          gameResult={gameResult}
+          onClose={closeGameResultModal}
+        />
+        <VoteSummaryModal
+          isOpen={showVoteSummaryModal && room?.status === 'finished' && !gameResult}
+          voteSummary={lastVoteSummary}
+          onClose={closeVoteSummaryModal}
+        />
+      </GraveyardScreen>
     );
   }
 
@@ -1514,57 +1037,16 @@ const App: React.FC = () => {
             <div className="absolute -inset-1 rounded-[36px] bg-gradient-to-br from-red-500/50 via-red-400/25 to-transparent blur-2xl"></div>
             <div className="relative overflow-hidden rounded-[32px] border border-[color:var(--line)] bg-[var(--surface)]">
               <div className="grid md:grid-cols-[280px,1fr]">
-                <aside className="flex flex-col gap-4 sm:gap-6 bg-[var(--surface-soft)] p-5 sm:p-6 md:p-8 border-b md:border-b-0 md:border-r border-[color:var(--line)]">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-[11px] uppercase tracking-[0.24em] sm:tracking-[0.4em] text-[color:var(--ink-faint)]">Social deduction game</p>
-                      <div className="flex items-center gap-3">
-                        <img src="/favicon.png" alt="Mafia Night Game" className="h-8 w-8 md:h-9 md:w-9 rounded-md" />
-                        <h1 className="title-font text-3xl sm:text-4xl md:text-5xl text-[color:var(--ink)]">MAFIA</h1>
-                      </div>
-                      <p className="mt-2 text-sm text-[color:var(--ink-muted)]">Private roles, live rounds, and voting.</p>
-                    </div>
-                    {themeToggleInline}
-                  </div>
-
-                  {roomCode.length === 6 && (
-                    <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-4">
-                      <p className="text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Room code</p>
-                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                        <span className="font-mono text-base font-semibold tracking-[0.2em] text-[color:var(--ink)] sm:text-xl sm:tracking-[0.35em]">{roomCode.toUpperCase()}</span>
-                        <button
-                          type="button"
-                          onClick={handleCopyCode}
-                          className="w-full rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] transition sm:w-auto sm:tracking-[0.3em]"
-                        >
-                          {copyStatus === 'copied' ? 'Copied' : copyStatus === 'error' ? 'Copy failed' : 'Copy'}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {phase === GamePhase.JOIN && entryMode === 'create' && (
-                    <button
-                      type="button"
-                      onClick={() => setRoomCode(generateRoomCode())}
-                      className="w-full rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-[9px] uppercase tracking-[0.2em] sm:tracking-[0.3em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] transition"
-                    >
-                      New code
-                    </button>
-                  )}
-
-                  {!(phase === GamePhase.JOIN && entryMode === 'create') && (
-                    <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 text-xs text-[color:var(--ink-muted)]">
-                      <div className="flex items-center gap-2 text-[color:var(--ink-muted)]">
-                        <span className="h-2 w-2 rounded-full bg-red-500"></span>
-                        <span>Private role sharing</span>
-                      </div>
-                      <p className="mt-2 leading-relaxed">
-                        Use phones for private roles, or run the complete game in the app.
-                      </p>
-                    </div>
-                  )}
-                </aside>
+                <Header
+                  roomCode={roomCode}
+                  phase={phase}
+                  entryMode={entryMode}
+                  copyStatus={copyStatus}
+                  theme={theme}
+                  onToggleTheme={toggleTheme}
+                  onCopyCode={handleCopyCode}
+                  onNewCode={() => setRoomCode(generateRoomCode())}
+                />
 
                 <main className="p-5 sm:p-6 md:p-10 bg-[var(--surface)]">
                   {errorMessage && (
@@ -1581,719 +1063,222 @@ const App: React.FC = () => {
                   )}
 
                   {phase === GamePhase.JOIN && (
-                    <div className={entryMode === 'create' ? 'space-y-3 sm:space-y-4' : 'space-y-4 sm:space-y-6'}>
-                      <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface-muted)] p-1 flex">
-                        <button
-                          type="button"
-                          onClick={() => handleModeChange('create')}
-                          className={`flex-1 py-2 rounded-xl text-[11px] uppercase tracking-[0.3em] font-semibold transition-colors ${
-                            entryMode === 'create' ? 'bg-[var(--surface-strong)] text-[color:var(--ink)]' : 'text-[color:var(--ink-faint)]'
-                          }`}
-                        >
-                          Create room
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleModeChange('join')}
-                          className={`flex-1 py-2 rounded-xl text-[11px] uppercase tracking-[0.3em] font-semibold transition-colors ${
-                            entryMode === 'join' ? 'bg-[var(--surface-strong)] text-[color:var(--ink)]' : 'text-[color:var(--ink-faint)]'
-                          }`}
-                        >
-                          Join room
-                        </button>
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-[11px] uppercase tracking-[0.3em] text-[color:var(--ink-faint)]">Player name</label>
-                        <input
-                          className="w-full rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-4 py-3 text-sm text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
-                          placeholder="Your name"
-                          value={playerName}
-                          onChange={(event) => setPlayerName(event.target.value)}
-                        />
-                      </div>
-
-                      {entryMode === 'join' ? (
-                        <div className="space-y-2">
-                          <label className="text-[11px] uppercase tracking-[0.3em] text-[color:var(--ink-faint)]">Room code</label>
-                          <input
-                            className="w-full rounded-2xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-4 py-3 text-sm uppercase font-mono tracking-[0.22em] sm:tracking-[0.35em] text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
-                            placeholder="6 digits"
-                            value={roomCode}
-                            onChange={(event) => setRoomCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-                            inputMode="numeric"
-                          />
-                        </div>
-                      ) : (
-                        <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface-soft)] p-3 space-y-3">
-                          <div className="flex items-center justify-between gap-2 text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.3em] text-[color:var(--ink-faint)]">
-                            <span>Room settings</span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[color:var(--ink-soft)]">Host</span>
-                              <button
-                                type="button"
-                                onClick={() => setShowDraftCustomRoles((prev) => !prev)}
-                                className="rounded-lg border border-[color:var(--line)] bg-[var(--surface-strong)] px-2 py-1 text-[9px] tracking-[0.16em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
-                              >
-                                {showDraftCustomRoles
-                                  ? 'Hide roles'
-                                  : `Custom roles${draftSettings.customRoles.length ? ` (${draftSettings.customRoles.length})` : ''}`}
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-2.5">
-                              <p className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--ink-faint)]">Mafia members</p>
-                              <div className="mt-2 flex items-center justify-between">
-                                <button
-                                  type="button"
-                                  onClick={() => handleDraftMafiaChange(-1)}
-                                  className="h-8 w-8 rounded-lg border border-[color:var(--line)] bg-[var(--surface)] text-xs font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
-                                >
-                                  -
-                                </button>
-                                <span className="w-7 text-center text-sm font-semibold text-[color:var(--ink)]">{draftSettings.mafiaCount}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDraftMafiaChange(1)}
-                                  className="h-8 w-8 rounded-lg border border-[color:var(--line)] bg-[var(--surface)] text-xs font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
-                                >
-                                  +
-                                </button>
-                              </div>
-                            </div>
-
-                            <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-2.5">
-                              <div className="flex items-center justify-between">
-                                <p className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--ink-faint)]">Silencer</p>
-                                <button
-                                  type="button"
-                                  onClick={toggleDraftLady}
-                                  aria-pressed={draftSettings.lady}
-                                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-                                    draftSettings.lady
-                                      ? 'bg-red-600'
-                                      : 'bg-[var(--surface)] border border-[color:var(--line)]'
-                                  }`}
-                                >
-                                  <span
-                                    className={`inline-block h-[18px] w-[18px] transform rounded-full bg-white shadow transition ${
-                                      draftSettings.lady ? 'translate-x-[22px]' : 'translate-x-1'
-                                    }`}
-                                  ></span>
-                                </button>
-                              </div>
-                              <p className="mt-2 text-[9px] uppercase tracking-[0.16em] text-[color:var(--ink-faint)]">
-                                {draftSettings.lady ? 'Enabled' : 'Disabled'}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-2.5">
-                            <div className="flex items-center justify-between">
-                              <p className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--ink-faint)]">Role-only mode</p>
-                              <button
-                                type="button"
-                                onClick={toggleDraftCasualMode}
-                                aria-pressed={draftSettings.casualMode}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-                                  draftSettings.casualMode
-                                    ? 'bg-red-600'
-                                    : 'bg-[var(--surface)] border border-[color:var(--line)]'
-                                }`}
-                              >
-                                <span
-                                  className={`inline-block h-[18px] w-[18px] transform rounded-full bg-white shadow transition ${
-                                    draftSettings.casualMode ? 'translate-x-[22px]' : 'translate-x-1'
-                                  }`}
-                                ></span>
-                              </button>
-                            </div>
-                            <p className="mt-2 text-[9px] uppercase tracking-[0.16em] text-[color:var(--ink-faint)]">
-                              {draftSettings.casualMode ? 'Assign roles only' : 'Complete in-app game'}
-                            </p>
-                          </div>
-
-                          {showDraftCustomRoles && (
-                            <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-2.5 space-y-2.5">
-                              <p className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--ink-faint)]">Custom roles</p>
-                              <div className="grid grid-cols-[1fr,auto] gap-2">
-                                <input
-                                  className="min-w-0 rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-2.5 py-2 text-xs text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
-                                  placeholder="Role name"
-                                  value={draftCustomRoleName}
-                                  onChange={(event) => setDraftCustomRoleName(event.target.value)}
-                                />
-                                <button
-                                  type="button"
-                                  onClick={handleAddDraftCustomRole}
-                                  className="rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-2.5 py-2 text-[9px] uppercase tracking-[0.16em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
-                                >
-                                  Add
-                                </button>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <button
-                                  type="button"
-                                  onClick={() => setDraftCustomRoleCount((prev) => clampCustomRoleCount(prev - 1))}
-                                  className="h-7 w-7 rounded-lg border border-[color:var(--line)] bg-[var(--surface)] text-[10px] font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
-                                >
-                                  -
-                                </button>
-                                <span className="w-6 text-center text-[10px] font-semibold text-[color:var(--ink)]">{draftCustomRoleCount}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => setDraftCustomRoleCount((prev) => clampCustomRoleCount(prev + 1))}
-                                  className="h-7 w-7 rounded-lg border border-[color:var(--line)] bg-[var(--surface)] text-[10px] font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
-                                >
-                                  +
-                                </button>
-                              </div>
-
-                              {draftSettings.customRoles.length > 0 && (
-                                <div className="space-y-1.5">
-                                  {draftSettings.customRoles.map((role, index) => (
-                                    <div
-                                      key={`${role.name}-${index}`}
-                                      className="flex min-w-0 items-center justify-between gap-2 rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-2 py-1.5"
-                                    >
-                                      <span className="min-w-0 flex-1 truncate text-xs font-semibold text-[color:var(--ink)]">{role.name}</span>
-                                      <div className="flex items-center gap-1">
-                                        <button
-                                          type="button"
-                                          onClick={() => handleDraftCustomRoleCountChange(index, -1)}
-                                          className="h-6 w-6 rounded-md border border-[color:var(--line)] bg-[var(--surface)] text-[10px] font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
-                                        >
-                                          -
-                                        </button>
-                                        <span className="w-4 text-center text-[10px] font-semibold text-[color:var(--ink)]">{role.count}</span>
-                                        <button
-                                          type="button"
-                                          onClick={() => handleDraftCustomRoleCountChange(index, 1)}
-                                          className="h-6 w-6 rounded-md border border-[color:var(--line)] bg-[var(--surface)] text-[10px] font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
-                                        >
-                                          +
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => handleRemoveDraftCustomRole(index)}
-                                          className="rounded-md border border-[color:var(--line)] bg-[var(--surface)] px-1.5 py-1 text-[8px] uppercase tracking-[0.16em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)]"
-                                        >
-                                          X
-                                        </button>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      <button
-                        onClick={handleJoin}
-                        disabled={isBusy}
-                        className="w-full rounded-2xl bg-red-600 text-white font-semibold py-4 uppercase tracking-[0.2em] sm:tracking-[0.3em] text-xs hover:bg-red-500 disabled:opacity-60 transition"
-                      >
-                        {entryMode === 'create' ? 'Create room' : 'Join room'}
-                      </button>
-                    </div>
+                    <EntryScreen
+                      entryMode={entryMode}
+                      playerName={playerName}
+                      roomCode={roomCode}
+                      isBusy={isBusy}
+                      draftSettings={draftSettings}
+                      draftCustomRoleName={draftCustomRoleName}
+                      draftCustomRoleCount={draftCustomRoleCount}
+                      showDraftCustomRoles={showDraftCustomRoles}
+                      onModeChange={handleModeChange}
+                      onPlayerNameChange={setPlayerName}
+                      onRoomCodeChange={setRoomCode}
+                      onDraftMafiaChange={handleDraftMafiaChange}
+                      onToggleDraftLady={toggleDraftLady}
+                      onToggleDraftCasualMode={toggleDraftCasualMode}
+                      onToggleShowDraftCustomRoles={() => setShowDraftCustomRoles((prev) => !prev)}
+                      onDraftCustomRoleNameChange={setDraftCustomRoleName}
+                      onDraftCustomRoleCountChange={setDraftCustomRoleCount}
+                      onAddDraftCustomRole={handleAddDraftCustomRole}
+                      onUpdateDraftCustomRoleCount={handleDraftCustomRoleCountChange}
+                      onRemoveDraftCustomRole={handleRemoveDraftCustomRole}
+                      onSubmit={handleJoin}
+                    />
                   )}
 
                   {phase === GamePhase.LOBBY && (
-                    <div className="space-y-4 sm:space-y-6">
-                      <div className="flex items-center justify-between">
-                        <h2 className="text-[11px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">
-                          Players ({players.length})
-                        </h2>
-                        {me?.isHost && (
-                          <span className="rounded-full bg-[var(--ink)] text-[color:var(--paper)] text-[10px] px-3 py-1 uppercase tracking-[0.2em] sm:tracking-[0.3em]">
-                            Host
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
-                        {players.map((player) => (
-                          <div
-                            key={player.id}
-                            className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] px-4 py-3"
-                          >
-                            <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[color:var(--ink)]">
-                              {player.name} {player.clientId === clientId && '(You)'}
-                            </span>
-                            <i className="fas fa-check-circle text-emerald-600 text-xs"></i>
-                          </div>
-                        ))}
-                      </div>
-
-                      {me?.isHost ? (
-                        <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface-soft)] p-4 space-y-3 sm:space-y-4">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-[color:var(--ink-muted)]">Mafia members</span>
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => handleMafiaCountChange(-1)}
-                                disabled={isBusy}
-                                className="h-9 w-9 rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] text-sm font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] disabled:opacity-60"
-                              >
-                                -
-                              </button>
-                              <span className="w-8 text-center font-semibold text-[color:var(--ink)]">{settings.mafiaCount}</span>
-                              <button
-                                onClick={() => handleMafiaCountChange(1)}
-                                disabled={isBusy}
-                                className="h-9 w-9 rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] text-sm font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] disabled:opacity-60"
-                              >
-                                +
-                              </button>
-                            </div>
-                          </div>
-                          <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface)] p-3 space-y-3">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-[color:var(--ink-muted)]">Silencer</span>
-                              <button
-                                type="button"
-                                onClick={handleLadyToggle}
-                                disabled={isBusy}
-                                aria-pressed={settings.lady}
-                                className={`relative inline-flex h-7 w-12 items-center rounded-full transition ${
-                                  settings.lady
-                                    ? 'bg-red-600'
-                                    : 'bg-[var(--surface-strong)] border border-[color:var(--line)]'
-                                } ${isBusy ? 'opacity-60' : ''}`}
-                              >
-                                <span
-                                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
-                                    settings.lady ? 'translate-x-6' : 'translate-x-1'
-                                  }`}
-                                ></span>
-                              </button>
-                            </div>
-                            <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--ink-faint)]">
-                              {settings.lady ? 'Enabled' : 'Disabled'}
-                            </p>
-                          </div>
-                          <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface)] p-3 space-y-3">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-[color:var(--ink-muted)]">Role-only mode</span>
-                              <button
-                                type="button"
-                                onClick={handleCasualModeToggle}
-                                disabled={isBusy}
-                                aria-pressed={settings.casualMode}
-                                className={`relative inline-flex h-7 w-12 items-center rounded-full transition ${
-                                  settings.casualMode
-                                    ? 'bg-red-600'
-                                    : 'bg-[var(--surface-strong)] border border-[color:var(--line)]'
-                                } ${isBusy ? 'opacity-60' : ''}`}
-                              >
-                                <span
-                                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
-                                    settings.casualMode ? 'translate-x-6' : 'translate-x-1'
-                                  }`}
-                                ></span>
-                              </button>
-                            </div>
-                            <p className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--ink-faint)]">
-                              {settings.casualMode ? 'Assign roles only' : 'Complete in-app game'}
-                            </p>
-                          </div>
-                          <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface)] p-3 space-y-3">
-                            <p className="text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Custom roles</p>
-                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                              <input
-                                className="flex-1 rounded-xl border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2 text-xs text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
-                                placeholder="Role name"
-                                value={customRoleName}
-                                onChange={(event) => setCustomRoleName(event.target.value)}
-                              />
-                              <div className="flex items-center gap-1 self-start sm:self-auto">
-                                <button
-                                  type="button"
-                                  onClick={() => setCustomRoleCount((prev) => clampCustomRoleCount(prev - 1))}
-                                  disabled={isBusy}
-                                  className="h-8 w-8 rounded-lg border border-[color:var(--line)] bg-[var(--surface)] text-xs font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] disabled:opacity-60"
-                                >
-                                  -
-                                </button>
-                                <span className="w-6 text-center text-xs font-semibold text-[color:var(--ink)]">{customRoleCount}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => setCustomRoleCount((prev) => clampCustomRoleCount(prev + 1))}
-                                  disabled={isBusy}
-                                  className="h-8 w-8 rounded-lg border border-[color:var(--line)] bg-[var(--surface)] text-xs font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] disabled:opacity-60"
-                                >
-                                  +
-                                </button>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={handleAddCustomRole}
-                                disabled={isBusy}
-                                className="w-full rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] disabled:opacity-60 sm:w-auto sm:tracking-[0.3em]"
-                              >
-                                Add
-                              </button>
-                            </div>
-                            {settings.customRoles.length > 0 && (
-                              <div className="space-y-2">
-                                {settings.customRoles.map((role, index) => (
-                                  <div
-                                    key={`${role.name}-${index}`}
-                                    className="flex min-w-0 flex-col gap-2 rounded-xl border border-[color:var(--line)] bg-[var(--surface)] px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
-                                  >
-                                    <span className="min-w-0 break-words text-sm font-semibold text-[color:var(--ink)]">{role.name}</span>
-                                    <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                                      <button
-                                        type="button"
-                                        onClick={() => handleCustomRoleCountChange(index, -1)}
-                                        disabled={isBusy}
-                                        className="h-7 w-7 rounded-lg border border-[color:var(--line)] bg-[var(--surface)] text-[10px] font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] disabled:opacity-60"
-                                      >
-                                        -
-                                      </button>
-                                      <span className="w-5 text-center text-[10px] font-semibold text-[color:var(--ink)]">{role.count}</span>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleCustomRoleCountChange(index, 1)}
-                                        disabled={isBusy}
-                                        className="h-7 w-7 rounded-lg border border-[color:var(--line)] bg-[var(--surface)] text-[10px] font-semibold text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] disabled:opacity-60"
-                                      >
-                                        +
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleRemoveCustomRole(index)}
-                                        disabled={isBusy}
-                                        className="rounded-lg border border-[color:var(--line)] bg-[var(--surface)] px-2 py-1 text-[9px] uppercase tracking-[0.2em] text-[color:var(--ink-muted)] hover:text-[color:var(--ink)] disabled:opacity-60 sm:tracking-[0.3em]"
-                                      >
-                                        Remove
-                                      </button>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                          <button
-                            onClick={handleStart}
-                            disabled={isBusy}
-                            className="w-full rounded-2xl bg-[var(--ink)] py-3 text-[11px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
-                          >
-                            Assign roles
-                          </button>
-                          <button
-                            onClick={handleLeaveRoom}
-                            className="w-full rounded-2xl border border-red-500/40 bg-red-600 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-white hover:bg-red-500 transition"
-                          >
-                            Leave room
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 text-center space-y-3 sm:space-y-4">
-                          <p className="text-xs text-[color:var(--ink-muted)] italic">Waiting for the host to assign roles...</p>
-                          <button
-                            onClick={handleLeaveRoom}
-                            className="w-full rounded-2xl border border-red-500/40 bg-red-600 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-white hover:bg-red-500 transition"
-                          >
-                            Leave room
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                    <LobbyScreen
+                      players={players}
+                      clientId={clientId}
+                      isHost={!!me?.isHost}
+                      settings={settings}
+                      customRoleName={customRoleName}
+                      customRoleCount={customRoleCount}
+                      isBusy={isBusy}
+                      onCustomRoleNameChange={setCustomRoleName}
+                      onCustomRoleCountChange={setCustomRoleCount}
+                      onMafiaCountChange={handleMafiaCountChange}
+                      onLadyToggle={handleLadyToggle}
+                      onCasualModeToggle={handleCasualModeToggle}
+                      onAddCustomRole={handleAddCustomRole}
+                      onCustomRoleUpdate={handleCustomRoleCountChange}
+                      onRemoveCustomRole={handleRemoveCustomRole}
+                      onStartGame={handleStart}
+                      onLeaveRoom={handleLeaveRoom}
+                    />
                   )}
 
-                  {phase === GamePhase.REVEAL && (me?.isNarrator ? (
-                    narratorPanel
-                  ) : (
-                    <div className="text-center space-y-6 sm:space-y-8">
-                      <p className="text-sm text-[color:var(--ink-muted)] italic">Your secret role is...</p>
+                  {(phase === GamePhase.REVEAL || phase === GamePhase.WAITING_FOR_OTHERS) && (
+                    me?.isNarrator ? (
+                      <NarratorScreen
+                        roomStatus={room?.status}
+                        roundState={roundState ?? null}
+                        isCasualMode={isCasualMode}
+                        alivePlayers={alivePlayers}
+                        gameResult={gameResult}
+                        isBusy={isBusy}
+                        votedPlayers={votedPlayers}
+                        pendingVoters={pendingVoters}
+                        roundActionSummary={roundActionSummary}
+                        roundInspectorPreview={roundInspectorPreview}
+                        playerNameById={playerNameById}
+                        players={players}
+                        eliminatedPlayerIds={eliminatedPlayerIds}
+                        me={me ?? null}
+                        onStartRound={handleStartRound}
+                        onResolveRound={handleResolveRound}
+                        onResetGame={handleResetGame}
+                        onLeaveRoom={handleLeaveRoom}
+                      />
+                    ) : (
+                      <RoleRevealScreen
+                        phase={phase === GamePhase.REVEAL ? 'REVEAL' : 'WAITING_FOR_OTHERS'}
+                        role={me?.role}
+                        players={players}
+                        isBusy={isBusy}
+                        onConfirmRole={handleConfirm}
+                        onLeaveRoom={handleLeaveRoom}
+                      />
+                    )
+                  )}
 
-                      <div className="relative overflow-hidden rounded-[28px] border border-[color:var(--line)] bg-[var(--surface-strong)] px-6 py-10 sm:py-12 group no-select">
-                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--surface-strong)] transition-opacity duration-300 group-active:opacity-0">
-                          <span className="title-font text-base uppercase tracking-[0.24em] sm:tracking-[0.4em] text-[color:var(--ink-muted)] select-none">
-                            Hold to reveal
-                          </span>
-                        </div>
-
-                        <div className="relative flex flex-col items-center">
-                          <div className="text-6xl mb-4">{getRoleIcon(me?.role || Role.VILLAGER)}</div>
-                          <h3 className="title-font break-words text-center text-3xl text-[color:var(--ink)] uppercase tracking-tight">{me?.role}</h3>
-                          <p className="mt-3 text-xs text-[color:var(--ink-muted)] px-4">
-                            {getRoleDescription(me?.role || Role.VILLAGER)}
-                          </p>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={handleConfirm}
-                        disabled={isBusy}
-                        className="w-full rounded-2xl bg-[var(--ink)] text-[color:var(--paper)] font-semibold py-4 uppercase tracking-[0.3em] text-xs disabled:opacity-60"
-                      >
-                        I have seen my role
-                      </button>
-                    </div>
-                  ))}
-
-                  {phase === GamePhase.WAITING_FOR_OTHERS && (me?.isNarrator ? (
-                    narratorPanel
-                  ) : (
-                    <div className="text-center space-y-5 sm:space-y-6 py-4 sm:py-6">
-                      <div className="flex justify-center space-x-2">
-                        <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-bounce"></div>
-                        <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-bounce [animation-delay:0.2s]"></div>
-                        <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-bounce [animation-delay:0.4s]"></div>
-                      </div>
-                      <h2 className="title-font text-2xl text-[color:var(--ink)]">Waiting for everyone...</h2>
-                      <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2">
-                        {players.map((player) => (
-                          <div
-                            key={player.id}
-                            className="flex items-center justify-between gap-3 text-[10px] uppercase tracking-[0.16em] sm:tracking-[0.35em]"
-                          >
-                            <span className={`min-w-0 flex-1 break-words text-left font-semibold ${player.hasConfirmed ? 'text-emerald-600' : 'text-[color:var(--ink-soft)]'}`}>
-                              {player.name}
-                            </span>
-                            {player.hasConfirmed ? (
-                              <i className="fas fa-check text-[10px]"></i>
-                            ) : (
-                              <i className="fas fa-clock text-[10px] text-[color:var(--ink-soft)]"></i>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                      <button
-                        onClick={handleLeaveRoom}
-                        className="w-full rounded-2xl border border-red-500/40 bg-red-600 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-white hover:bg-red-500 transition"
-                      >
-                        Leave room
-                      </button>
-                    </div>
-                  ))}
-
-                  {phase === GamePhase.READY_TO_PLAY && (me?.isNarrator ? (
-                    narratorPanel
-                  ) : (
-                    <div className="text-center space-y-5 sm:space-y-6 py-4">
-                      {isMeEliminated ? (
-                        <div className="space-y-4">
+                  {phase === GamePhase.READY_TO_PLAY && (
+                    me?.isNarrator ? (
+                      <NarratorScreen
+                        roomStatus={room?.status}
+                        roundState={roundState ?? null}
+                        isCasualMode={isCasualMode}
+                        alivePlayers={alivePlayers}
+                        gameResult={gameResult}
+                        isBusy={isBusy}
+                        votedPlayers={votedPlayers}
+                        pendingVoters={pendingVoters}
+                        roundActionSummary={roundActionSummary}
+                        roundInspectorPreview={roundInspectorPreview}
+                        playerNameById={playerNameById}
+                        players={players}
+                        eliminatedPlayerIds={eliminatedPlayerIds}
+                        me={me ?? null}
+                        onStartRound={handleStartRound}
+                        onResolveRound={handleResolveRound}
+                        onResetGame={handleResetGame}
+                        onLeaveRoom={handleLeaveRoom}
+                      />
+                    ) : (
+                      <div className="text-center space-y-5 sm:space-y-6 py-4">
+                        {gameResult ? (
                           <div>
-                            <h2 className="title-font text-3xl text-[color:var(--ink)]">Graveyard</h2>
+                            <h2 className="title-font text-3xl text-[color:var(--ink)]">Game over</h2>
                             <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                              Private chat for eliminated players.
+                              {gameResult.winner === 'city' ? 'The town wins.' : 'The Mafia wins.'}
                             </p>
-                            {gameResult && (
-                              <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                                Game over: {gameResult.winner === 'city' ? 'The town wins.' : 'The Mafia wins.'}
-                              </p>
-                            )}
                           </div>
-                          <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 text-left space-y-3">
-                            <div
-                              ref={graveyardChatRef}
-                              className="h-[50vh] min-h-[300px] max-h-[560px] overflow-y-auto space-y-2 rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] p-2.5"
-                            >
-                              {graveyardMessages.length ? (
-                                graveyardMessages.map((message) => {
-                                  const isMine = message.senderId === me?.id;
-                                  return (
-                                    <div
-                                      key={message.id}
-                                      className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
-                                    >
-                                      <div
-                                        className={`max-w-[86%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
-                                          isMine
-                                            ? 'rounded-br-md bg-red-600 text-white'
-                                            : 'rounded-bl-md border border-[color:var(--line)] bg-[var(--surface)] text-[color:var(--ink)]'
-                                        }`}
-                                      >
-                                        {!isMine && (
-                                          <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--ink-faint)]">
-                                            {message.senderName}
-                                          </div>
-                                        )}
-                                        <div className="break-words whitespace-pre-wrap">{message.message}</div>
-                                      </div>
-                                    </div>
-                                  );
-                                })
-                              ) : (
-                                <p className="text-xs text-[color:var(--ink-soft)]">No messages yet.</p>
-                              )}
-                            </div>
-                            <div className="grid gap-2 sm:grid-cols-[1fr,auto] sm:items-end">
-                              <textarea
-                                value={graveyardDraftMessage}
-                                onChange={(event) => setGraveyardDraftMessage(event.target.value)}
-                                placeholder="Message the graveyard..."
-                                className="min-h-[86px] w-full resize-y rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-sm text-[color:var(--ink)] placeholder:text-[color:var(--ink-soft)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
-                              />
-                              <button
-                                onClick={handleSendGraveyardMessage}
-                                disabled={isBusy || !graveyardDraftMessage.trim()}
-                                className="w-full rounded-xl bg-[var(--ink)] px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60 sm:w-auto sm:min-h-[86px]"
-                              >
-                                Send
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ) : gameResult ? (
-                        <div>
-                          <h2 className="title-font text-3xl text-[color:var(--ink)]">Game over</h2>
-                          <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                            {gameResult.winner === 'city' ? 'The town wins.' : 'The Mafia wins.'}
-                          </p>
-                        </div>
-                      ) : isCasualMode ? (
-                        <div>
-                          <h2 className="title-font text-3xl text-[color:var(--ink)]">Role-only mode</h2>
-                          <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                            Roles are assigned. Continue night actions, discussion, and voting in person.
-                          </p>
-                        </div>
-                      ) : roundState?.phase === 'night' && me?.role === Role.MAFIA ? (
-                        <div>
-                          <h2 className="title-font text-3xl text-[color:var(--ink)]">Mafia night</h2>
-                          <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                            Use the private Mafia chat to agree on a target.
-                          </p>
-                        </div>
-                      ) : roundState?.phase === 'night' && myNightActionType && me?.role !== Role.MAFIA ? (
-                        <div className="space-y-4">
+                        ) : isCasualMode ? (
                           <div>
-                            <h2 className="title-font text-3xl text-[color:var(--ink)]">Night action</h2>
+                            <h2 className="title-font text-3xl text-[color:var(--ink)]">Role-only mode</h2>
                             <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                              Choose a player and submit your action.
+                              Roles are assigned. Continue night actions, discussion, and voting in person.
                             </p>
                           </div>
-                          <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 text-left space-y-3">
-                            <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]">
-                              Your role: {me?.role}
-                            </p>
-                            <select
-                              value={nightTargetId}
-                              onChange={(event) => setNightTargetId(event.target.value)}
-                              className="w-full rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-sm text-[color:var(--ink)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
-                            >
-                              <option value="">Choose a player</option>
-                              {availableNightTargets.map((player) => (
-                                <option key={player.id} value={player.id}>
-                                  {player.name}
-                                </option>
-                              ))}
-                            </select>
-                            <button
-                              onClick={handleSubmitNightAction}
-                              disabled={isBusy || !nightTargetId}
-                              className="w-full rounded-xl bg-[var(--ink)] py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
-                            >
-                              Submit action
-                            </button>
-                            {mySubmittedAction && (
-                              <p className="text-xs text-[color:var(--ink-muted)]">
-                                Last selection: {mySubmittedAction.targetName}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      ) : roundState?.phase === 'night' ? (
-                        <div>
-                          <h2 className="title-font text-3xl text-[color:var(--ink)]">Night is in progress</h2>
-                          <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                            Your role has no night action. Waiting for the other players and the narrator.
-                          </p>
-                        </div>
-                      ) : roundState?.phase === 'voting' ? (
-                        <div className="space-y-4">
+                        ) : roundState?.phase === 'night' && me?.role === Role.MAFIA ? (
                           <div>
-                            <h2 className="title-font text-3xl text-[color:var(--ink)]">Voting is open</h2>
+                            <h2 className="title-font text-3xl text-[color:var(--ink)]">Mafia night</h2>
                             <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                              Choose a player and submit your vote. The result appears after every living player votes.
+                              Use the private Mafia chat to agree on a target.
                             </p>
                           </div>
-                          <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 text-left space-y-3">
-                            <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--ink-faint)]">
-                              Vote
+                        ) : roundState?.phase === 'night' && myNightActionType && me?.role !== Role.MAFIA ? (
+                          <NightActionCard
+                            role={me?.role}
+                            targetId={nightTargetId}
+                            availableTargets={availableNightTargets}
+                            lastSubmittedTargetName={mySubmittedAction?.targetName}
+                            isBusy={isBusy}
+                            onTargetChange={setNightTargetId}
+                            onSubmit={handleSubmitNightAction}
+                          />
+                        ) : roundState?.phase === 'night' ? (
+                          <div>
+                            <h2 className="title-font text-3xl text-[color:var(--ink)]">Night is in progress</h2>
+                            <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
+                              Your role has no night action. Waiting for the other players and the narrator.
                             </p>
-                            <select
-                              value={voteTargetId}
-                              onChange={(event) => setVoteTargetId(event.target.value)}
-                              className="w-full rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-sm text-[color:var(--ink)] focus:outline-none focus:ring-2 focus:ring-red-400/50"
-                            >
-                              <option value="">Choose a player</option>
-                              {alivePlayers.map((player) => (
-                                <option key={player.id} value={player.id}>
-                                  {player.name}
-                                </option>
-                              ))}
-                            </select>
-                            <button
-                              onClick={handleFinishVoting}
-                              disabled={isBusy || !voteTargetId}
-                              className="w-full rounded-xl bg-[var(--ink)] py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
-                            >
-                              Submit vote
-                            </button>
-                            {mySubmittedVote && (
-                              <p className="text-xs text-[color:var(--ink-muted)]">
-                                Your current vote: {mySubmittedVote.targetName}
-                              </p>
-                            )}
-                            <div className="text-xs text-[color:var(--ink-muted)]">
-                              Votes submitted: {votedPlayers.length}/{alivePlayers.length}
-                            </div>
-                            <div className="text-xs text-[color:var(--ink-muted)]">
-                              Waiting for: {pendingVoters.length ? pendingVoters.map((player) => player.name).join(', ') : 'all votes are in'}
-                            </div>
                           </div>
-                        </div>
-                      ) : (
-                        <div>
-                          <h2 className="title-font text-3xl text-[color:var(--ink)]">Ready for the next round</h2>
-                          <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-                            Waiting for the narrator to start the next night.
-                          </p>
-                        </div>
-                      )}
-
-                      <div className="h-px bg-[color:var(--line)] w-full"></div>
-                      <div className="space-y-3">
-                        {me?.isHost && (
-                          <button
-                            onClick={handleResetGame}
-                            disabled={isBusy}
-                            className="w-full rounded-2xl bg-[var(--ink)] py-3 text-[11px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
-                          >
-                            Assign new roles
-                          </button>
+                        ) : roundState?.phase === 'voting' ? (
+                          <VotingCard
+                            targetId={voteTargetId}
+                            alivePlayers={alivePlayers}
+                            votedPlayers={votedPlayers}
+                            pendingVoters={pendingVoters}
+                            mySubmittedVote={mySubmittedVote ?? undefined}
+                            isBusy={isBusy}
+                            onTargetChange={setVoteTargetId}
+                            onSubmitVote={handleFinishVoting}
+                          />
+                        ) : (
+                          <div>
+                            <h2 className="title-font text-3xl text-[color:var(--ink)]">Ready for the next round</h2>
+                            <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
+                              Waiting for the narrator to start the next night.
+                            </p>
+                          </div>
                         )}
-                        <button
-                          onClick={handleLeaveRoom}
-                          className="w-full rounded-2xl border border-red-500/40 bg-red-600 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-white hover:bg-red-500 transition"
-                        >
-                          Leave room
-                        </button>
+
+                        <div className="h-px bg-[color:var(--line)] w-full"></div>
+                        <div className="space-y-3">
+                          {me?.isHost && (
+                            <button
+                              onClick={handleResetGame}
+                              disabled={isBusy}
+                              className="w-full rounded-2xl bg-[var(--ink)] py-3 text-[11px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
+                            >
+                              Assign new roles
+                            </button>
+                          )}
+                          <button
+                            onClick={handleLeaveRoom}
+                            className="w-full rounded-2xl border border-red-500/40 bg-red-600 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-white hover:bg-red-500 transition"
+                          >
+                            Leave room
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  )}
                 </main>
               </div>
             </div>
           </div>
 
-          {renderMafiaNightModal()}
-          {renderGameResultModal()}
-          {renderVoteSummaryModal()}
+          <MafiaChatModal
+            isOpen={isMafiaNightChatOpen}
+            round={roundState?.round || 0}
+            messages={mafiaMessages}
+            currentUserId={me?.id}
+            draftMessage={mafiaDraftMessage}
+            nightTargetId={nightTargetId}
+            availableTargets={availableNightTargets}
+            lastSubmittedTargetName={mySubmittedAction?.targetName}
+            isBusy={isBusy}
+            onDraftChange={setMafiaDraftMessage}
+            onSendMessage={handleSendMafiaMessage}
+            onTargetChange={setNightTargetId}
+            onSubmitTarget={handleSubmitNightAction}
+          />
+          <GameResultModal
+            isOpen={showGameResultModal && room?.status === 'finished' && !!gameResult}
+            gameResult={gameResult}
+            onClose={closeGameResultModal}
+          />
+          <VoteSummaryModal
+            isOpen={showVoteSummaryModal && room?.status === 'finished' && !gameResult}
+            voteSummary={lastVoteSummary}
+            onClose={closeVoteSummaryModal}
+          />
 
-          <footer className="mt-5 sm:mt-8 flex items-center justify-center gap-2 text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.4em] text-[color:var(--ink-soft)]">
-            <i className="fas fa-fingerprint"></i>
-            <span>Free, open-source Mafia party game</span>
-          </footer>
+          <Footer />
         </div>
       </div>
     </div>
