@@ -56,220 +56,207 @@ export const NarratorScreen: React.FC<NarratorScreenProps> = ({
   onLeaveRoom,
 }) => {
   return (
-    <div className="text-center space-y-5 sm:space-y-6 py-2">
-      <div>
-        <h2 className="title-font text-3xl text-[color:var(--ink)]">Narrator</h2>
-        <p className="mt-2 text-sm text-[color:var(--ink-muted)]">
-          You guide the game, see every role, and manage rounds without voting.
-        </p>
-        {roomStatus === 'finished' && (
-          <p className="mt-2 text-xs uppercase tracking-[0.3em] text-emerald-600">
-            {isCasualMode ? 'Role-only mode is active' : `Everyone has seen their role. Round ${roundState?.round || 0}`}
+    <div className="space-y-6 text-left">
+      {/* Gamemaster Header */}
+      <div className="flex items-start justify-between gap-4 border-b border-[color:var(--line)] pb-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/25">
+              <i className="fas fa-crown text-[9px]"></i>
+              Narrator Control Deck
+            </span>
+            {roomStatus === 'finished' && (
+              <span className="text-xs font-mono font-semibold text-[color:var(--ink-muted)]">
+                Round {roundState?.round || 0}
+              </span>
+            )}
+          </div>
+          <h2 className="font-display text-2xl font-bold text-[color:var(--ink)] tracking-tight">
+            Game Director Console
+          </h2>
+          <p className="text-xs text-[color:var(--ink-muted)] mt-0.5">
+            You guide the narrative, observe secret actions, and control round transitions.
           </p>
-        )}
+        </div>
       </div>
 
+      {/* Round Controls */}
       {roomStatus === 'finished' && (
-        <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-3 text-left">
-          <div className="flex items-center justify-between">
-            <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">
-              {isCasualMode ? 'Role-only mode' : 'Round controls'}
-            </p>
-            <span className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--ink-soft)]">
-              {isCasualMode ? 'Continue the game in person' : `Phase: ${roundState?.phase || 'idle'}`}
+        <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-soft)] p-4 space-y-4">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-semibold text-[color:var(--ink)]">
+              {isCasualMode ? 'Role-Only Play' : `Current Phase: ${roundState?.phase?.toUpperCase() || 'IDLE'}`}
+            </span>
+            <span className="text-[color:var(--ink-muted)] font-mono">
+              Alive: {alivePlayers.length}/{players.filter((p) => !p.isNarrator).length}
             </span>
           </div>
 
-          <div className="text-xs text-[color:var(--ink-muted)]">
-            Active players: {alivePlayers.length}
-          </div>
-          <div className="text-xs text-[color:var(--ink-muted)]">
-            Alive: {alivePlayers.length ? alivePlayers.map((player) => player.name).join(', ') : 'none'}
-          </div>
           {gameResult && (
-            <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-xs text-[color:var(--ink-muted)]">
-              Game over: {gameResult.winner === 'city' ? 'The town wins.' : 'The Mafia wins.'}
+            <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-700 dark:text-red-300 flex items-center gap-2">
+              <i className="fas fa-trophy text-sm"></i>
+              <span className="font-semibold">
+                Game Over: {gameResult.winner === 'city' ? 'The Town has eliminated all Mafia!' : 'The Mafia has seized control!'}
+              </span>
             </div>
-          )}
-          {isCasualMode && (
-            <p className="text-xs text-[color:var(--ink-muted)]">
-              This mode only assigns and reveals roles. Night actions, discussion, and voting happen in person.
-            </p>
           )}
 
           {!isCasualMode && !gameResult && (roundState?.phase === 'idle' || !roundState) && (
             <button
+              type="button"
               onClick={onStartRound}
               disabled={isBusy}
-              className="w-full rounded-xl bg-[var(--ink)] py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
+              className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 text-xs tracking-wide shadow-xs transition disabled:opacity-40 btn-tactile flex items-center justify-center gap-2"
             >
-              Start night round
+              <i className="fas fa-moon text-xs"></i>
+              <span>Initiate Night Phase</span>
             </button>
           )}
 
           {!isCasualMode && !gameResult && roundState?.phase === 'night' && (
             <button
+              type="button"
               onClick={onResolveRound}
               disabled={isBusy}
-              className="w-full rounded-xl bg-[var(--ink)] py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
+              className="w-full rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 text-xs tracking-wide shadow-xs transition disabled:opacity-40 btn-tactile flex items-center justify-center gap-2"
             >
-              Resolve night
+              <i className="fas fa-sun text-xs"></i>
+              <span>Resolve Night Actions & Wake Town</span>
             </button>
           )}
 
           {!isCasualMode && !gameResult && roundState?.phase === 'voting' && (
-            <div className="space-y-2">
-              <div className="text-xs text-[color:var(--ink-muted)]">
-                Votes submitted: {votedPlayers.length}/{alivePlayers.length}
+            <div className="space-y-2 bg-[var(--surface-strong)] rounded-lg p-3 border border-[color:var(--line)]">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[color:var(--ink-muted)]">Votes In:</span>
+                <span className="font-mono font-bold text-[color:var(--ink)]">
+                  {votedPlayers.length}/{alivePlayers.length}
+                </span>
               </div>
-              <div className="text-xs text-[color:var(--ink-muted)]">
-                Voted: {votedPlayers.length ? votedPlayers.map((player) => player.name).join(', ') : 'nobody'}
+              <div className="text-[11px] text-[color:var(--ink-faint)] leading-tight">
+                {pendingVoters.length > 0 ? (
+                  <span>Waiting on: {pendingVoters.map((p) => p.name).join(', ')}</span>
+                ) : (
+                  <span className="text-emerald-600 font-semibold">All ballots recorded. Tallying results...</span>
+                )}
               </div>
-              <div className="text-xs text-[color:var(--ink-muted)]">
-                Waiting for: {pendingVoters.length ? pendingVoters.map((player) => player.name).join(', ') : 'all votes are in'}
-              </div>
-              <p className="text-[11px] text-[color:var(--ink-soft)]">
-                The result appears automatically after every living player submits a vote.
-              </p>
             </div>
           )}
         </div>
       )}
 
+      {/* Tonight's Live Intel (Night Phase) */}
       {!isCasualMode && roomStatus === 'finished' && roundState?.phase === 'night' && (
-        <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2 text-left">
-          <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Tonight's actions</p>
-          <div className="text-xs text-[color:var(--ink-muted)]">
-            Mafia targets:{' '}
-            {roundActionSummary.mafia.length
-              ? roundActionSummary.mafia.map((item) => item.targetName).join(', ')
-              : 'no selection'}
-          </div>
-          <div className="text-xs text-[color:var(--ink-muted)]">
-            Silencer blocks: {roundActionSummary.lady?.targetName || 'no selection'}
-          </div>
-          <div className="text-xs text-[color:var(--ink-muted)]">
-            Doctor protects: {roundActionSummary.doctor?.targetName || 'no selection'}
-          </div>
-          <div className="text-xs text-[color:var(--ink-muted)]">
-            Detective investigates: {roundInspectorPreview?.targetName || roundActionSummary.detective?.targetName || 'no selection'}
-            {roundInspectorPreview && ` (${roundInspectorPreview.isMafia ? 'Mafia' : 'not Mafia'})`}
-          </div>
-        </div>
-      )}
-
-      {!isCasualMode && roomStatus === 'finished' && roundState?.lastResult && (
-        <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2 text-left">
-          <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Previous night</p>
-          <div className="text-xs text-[color:var(--ink-muted)]">
-            Mafia eliminated: {roundState.lastResult.killedPlayerId ? playerNameById.get(roundState.lastResult.killedPlayerId) : 'nobody'}
-          </div>
-          <div className="text-xs text-[color:var(--ink-muted)]">
-            Detective investigated: {roundState.lastResult.inspectorTargetId ? playerNameById.get(roundState.lastResult.inspectorTargetId) : 'nobody'}
-            {roundState.lastResult.inspectorTargetId &&
-              ` - ${roundState.lastResult.inspectorIsMafia ? 'Mafia' : 'not Mafia'}`}
-          </div>
-          <div className="text-xs text-[color:var(--ink-muted)]">
-            Doctor protected: {roundState.lastResult.doctorTargetId ? playerNameById.get(roundState.lastResult.doctorTargetId) : 'nobody'}
-            {roundState.lastResult.doctorSaved ? ' (successful save)' : ''}
-          </div>
-          <div className="text-xs text-[color:var(--ink-muted)]">
-            Silencer blocked: {roundState.lastResult.ladyTargetId ? playerNameById.get(roundState.lastResult.ladyTargetId) : 'nobody'}
-          </div>
-        </div>
-      )}
-
-      {!isCasualMode && roomStatus === 'finished' && roundState?.events?.length ? (
-        <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2 text-left">
-          <p className="text-[10px] uppercase tracking-[0.22em] text-[color:var(--ink-faint)]">Round history</p>
-          <div className="max-h-52 overflow-y-auto space-y-1.5 pr-1">
-            {[...roundState.events].slice(-14).reverse().map((event) => (
-              <div
-                key={event.id}
-                className="rounded-lg border border-[color:var(--line)] bg-[var(--surface-strong)] px-2.5 py-2 text-xs text-[color:var(--ink-muted)]"
-              >
-                <span className="text-[10px] uppercase tracking-[0.14em] text-[color:var(--ink-soft)]">
-                  Round {event.round}
-                </span>
-                <div className="mt-1">{event.message}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-3">
-        <p className="text-[10px] uppercase tracking-[0.22em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Player roles</p>
-        {players
-          .filter((player) => !player.isNarrator)
-          .map((player) => {
-            const role = player.role || Role.VILLAGER;
-            const nameTone =
-              role === Role.MAFIA
-                ? 'text-red-600'
-                : role === Role.DOCTOR
-                  ? 'text-emerald-600'
-                  : role === Role.DETECTIVE
-                    ? 'text-amber-600'
-                    : role === Role.LADY
-                      ? 'text-red-500'
-                      : 'text-[color:var(--ink)]';
-
-            return (
-              <div
-                key={player.id}
-                className="flex min-w-0 flex-col items-start gap-2 rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <span className={`w-full min-w-0 break-words text-left text-sm font-bold ${nameTone}`}>
-                  {player.name} {eliminatedPlayerIds.has(player.id) ? '(eliminated)' : ''}
-                </span>
-                <span className="flex w-full items-center gap-2 text-[10px] uppercase tracking-[0.2em] sm:w-auto sm:tracking-[0.3em]">
-                  <span className="text-base leading-none text-[color:var(--ink)]">
-                    {getRoleIcon(player.role || Role.VILLAGER)}
-                  </span>
-                  <span className="break-words">{player.role || 'Role'}</span>
-                </span>
-              </div>
-            );
-          })}
-      </div>
-
-      <div className="rounded-2xl border border-[color:var(--line)] bg-[var(--surface)] p-4 space-y-2">
-        <p className="text-[10px] uppercase tracking-[0.22em] sm:tracking-[0.35em] text-[color:var(--ink-faint)]">Role confirmations</p>
-        {players
-          .filter((player) => !player.isNarrator)
-          .map((player) => (
-            <div
-              key={player.id}
-              className="flex items-center justify-between gap-3 text-[10px] uppercase tracking-[0.16em] sm:tracking-[0.35em]"
-            >
-              <span className={`min-w-0 flex-1 break-words text-left font-semibold ${player.hasConfirmed ? 'text-emerald-600' : 'text-[color:var(--ink-soft)]'}`}>
-                {player.name}
+        <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-soft)] p-4 space-y-2.5">
+          <p className="text-xs font-bold uppercase tracking-wider text-[color:var(--ink-muted)]">
+            Tonight's Live Intel
+          </p>
+          <div className="space-y-1.5 text-xs">
+            <div className="flex items-center justify-between p-2 rounded-lg bg-[var(--surface-strong)] border border-[color:var(--line)]">
+              <span className="font-medium text-red-600 flex items-center gap-1.5">
+                <i className="fas fa-user-secret text-xs"></i> Mafia Target:
               </span>
-              {player.hasConfirmed ? (
-                <i className="fas fa-check text-[10px]"></i>
-              ) : (
-                <i className="fas fa-clock text-[10px] text-[color:var(--ink-soft)]"></i>
-              )}
+              <span className="font-mono font-bold text-[color:var(--ink)]">
+                {roundActionSummary.mafia.length
+                  ? roundActionSummary.mafia.map((item) => item.targetName).join(', ')
+                  : 'Pending...'}
+              </span>
             </div>
-          ))}
+            <div className="flex items-center justify-between p-2 rounded-lg bg-[var(--surface-strong)] border border-[color:var(--line)]">
+              <span className="font-medium text-emerald-600 flex items-center gap-1.5">
+                <i className="fas fa-user-md text-xs"></i> Doctor Protect:
+              </span>
+              <span className="font-mono font-bold text-[color:var(--ink)]">
+                {roundActionSummary.doctor?.targetName || 'Pending...'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between p-2 rounded-lg bg-[var(--surface-strong)] border border-[color:var(--line)]">
+              <span className="font-medium text-amber-600 flex items-center gap-1.5">
+                <i className="fas fa-search text-xs"></i> Detective Inquiry:
+              </span>
+              <span className="font-mono font-bold text-[color:var(--ink)]">
+                {roundInspectorPreview?.targetName || roundActionSummary.detective?.targetName || 'Pending...'}
+                {roundInspectorPreview && ` (${roundInspectorPreview.isMafia ? 'MAFIA' : 'CLEAN'})`}
+              </span>
+            </div>
+            <div className="flex items-center justify-between p-2 rounded-lg bg-[var(--surface-strong)] border border-[color:var(--line)]">
+              <span className="font-medium text-rose-600 flex items-center gap-1.5">
+                <i className="fas fa-chess-queen text-xs"></i> Silencer Block:
+              </span>
+              <span className="font-mono font-bold text-[color:var(--ink)]">
+                {roundActionSummary.lady?.targetName || 'Pending...'}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Complete Player Roles Roster */}
+      <div className="rounded-xl border border-[color:var(--line)] bg-[var(--surface-strong)] overflow-hidden shadow-xs">
+        <div className="p-3.5 border-b border-[color:var(--line)] flex items-center justify-between">
+          <span className="text-xs font-bold uppercase tracking-wider text-[color:var(--ink)]">
+            Player Roles Dossier
+          </span>
+          <span className="text-[11px] text-[color:var(--ink-faint)]">Narrator Eyes Only</span>
+        </div>
+        <div className="divide-y divide-[color:var(--line)] max-h-60 overflow-y-auto">
+          {players
+            .filter((p) => !p.isNarrator)
+            .map((player) => {
+              const isDead = eliminatedPlayerIds.has(player.id);
+              const role = player.role || Role.VILLAGER;
+
+              return (
+                <div
+                  key={player.id}
+                  className={`flex items-center justify-between px-4 py-2.5 text-xs transition-colors ${
+                    isDead ? 'opacity-40 bg-[var(--surface-soft)]' : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-base">{getRoleIcon(role)}</span>
+                    <div>
+                      <span className={`font-semibold ${isDead ? 'line-through' : 'text-[color:var(--ink)]'}`}>
+                        {player.name}
+                      </span>
+                      {isDead && <span className="ml-1.5 text-[10px] text-red-600 font-bold">(Eliminated)</span>}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 font-mono text-[11px]">
+                    <span className="font-bold text-[color:var(--ink)]">{role}</span>
+                    {player.hasConfirmed ? (
+                      <i className="fas fa-check text-emerald-600 text-[10px]" title="Role confirmed"></i>
+                    ) : (
+                      <i className="fas fa-clock text-[color:var(--ink-faint)] text-[10px]" title="Awaiting confirmation"></i>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+        </div>
       </div>
 
-      {me?.isHost && (
+      {/* Action Buttons */}
+      <div className="pt-2 flex flex-col gap-2">
+        {me?.isHost && (
+          <button
+            type="button"
+            onClick={onResetGame}
+            disabled={isBusy}
+            className="w-full py-2.5 rounded-xl bg-[var(--ink)] text-[var(--paper)] text-xs font-semibold hover:opacity-90 disabled:opacity-40 transition btn-tactile"
+          >
+            Redistribute & Start New Game
+          </button>
+        )}
         <button
-          onClick={onResetGame}
-          disabled={isBusy}
-          className="w-full rounded-2xl bg-[var(--ink)] py-3 text-[11px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-[color:var(--paper)] hover:opacity-90 disabled:opacity-60"
+          type="button"
+          onClick={onLeaveRoom}
+          className="w-full py-2.5 rounded-xl border border-[color:var(--line)] text-xs font-medium text-[color:var(--ink-muted)] hover:text-red-600 hover:border-red-500/30 hover:bg-red-500/5 transition btn-tactile"
         >
-          Assign new roles
+          Exit Room
         </button>
-      )}
-      <button
-        onClick={onLeaveRoom}
-        className="w-full rounded-2xl border border-red-500/40 bg-red-600 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.35em] text-white hover:bg-red-500 transition"
-      >
-        Leave room
-      </button>
+      </div>
     </div>
   );
 };
